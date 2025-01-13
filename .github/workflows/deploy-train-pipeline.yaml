@@ -1,8 +1,7 @@
 name: Deploy Batch Endpoint and Pipeline on Merge to qua
 
 on:
-  push:
-    branches: [ qua ]
+  workflow_dispatch:
 
 jobs:
   deploy:

@@ -37,7 +37,7 @@ jobs:
 
       - name: Deploy environments and components
         run: |
-          for dir in train/components/*/; do
+          for dir in src/train/components/*/; do
             echo "Processing $dir"
             if [ -f "$dir/env.yaml" ]; then
               echo "Deploying environment in $dir"

@@ -1,4 +1,4 @@
-name: Deploy Batch Endpoint and Pipeline on Merge to qua
+name: Deploy train pipeline
 
 on:
   workflow_dispatch:

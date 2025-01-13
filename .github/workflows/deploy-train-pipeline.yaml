@@ -55,4 +55,4 @@ jobs:
 
       # Create or update pipeline
       - name: Create or update pipeline
-        run: az ml component create --file train/pipeline.yaml
+        run: az ml component create --file src/train/pipeline.yaml

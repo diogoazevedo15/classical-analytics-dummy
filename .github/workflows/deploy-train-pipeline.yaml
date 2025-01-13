@@ -1,0 +1,59 @@
+name: Deploy Batch Endpoint and Pipeline on Merge to qua
+
+on:
+  push:
+    branches: [ qua ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_RESOURCE_GROUP: ${{ variables.AZURE_RESOURCE_GROUP_DEV }}
+      AZURE_WORKSPACE_NAME: ${{ variables.AZURE_WORKSPACE_NAME_DEV }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Login to Azure via Service Principal
+        run: |
+          az login --service-principal \
+            --username $AZURE_CLIENT_ID \
+            --password $AZURE_CLIENT_SECRET \
+            --tenant $AZURE_TENANT_ID
+
+      - name: Install Azure ML CLI extension
+        run: az extension add -n ml --yes
+
+      - name: Configure defaults
+        run: az configure --defaults group=$AZURE_RESOURCE_GROUP workspace=$AZURE_WORKSPACE_NAME subscription=$AZURE_SUBSCRIPTION_ID
+
+      - name: Deploy environments and components
+        run: |
+          for dir in train/components/*/; do
+            echo "Processing $dir"
+            if [ -f "$dir/env.yaml" ]; then
+              echo "Deploying environment in $dir"
+              az ml environment create --file "$dir/env.yaml"
+            else
+              echo "No env.yaml found in $dir"
+            fi
+            if [ -f "$dir/config.yaml" ]; then
+              echo "Deploying component in $dir"
+              az ml component create --file "$dir/config.yaml"
+            else
+              echo "No config.yaml found in $dir"
+            fi
+          done
+
+      # Create or update pipeline
+      - name: Create or update pipeline
+        run: az ml component create --file train/pipeline.yaml

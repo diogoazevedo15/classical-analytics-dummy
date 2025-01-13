@@ -1,0 +1,26 @@
+$schema: https://azuremlschemas.azureedge.net/latest/PipelineComponent.schema.json
+type: pipeline
+name: train_pipeline
+display_name: CV Pipeline Updated
+version: 1
+
+# Component-level inputs
+inputs:
+
+outputs:
+
+jobs:
+  process-data:
+    type: command
+    component: azureml:process-data@latest
+    inputs:
+
+    outputs:
+
+
+  train-model:
+    type: command
+    component: azureml:train-model@latest
+    inputs:
+
+    outputs:

@@ -1,0 +1,13 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: train-model
+display_name: train-model
+version: 1
+type: command
+inputs:
+
+outputs:
+
+code: code.py
+environment: azureml:env-train-model@latest
+command: >
+  python code.py

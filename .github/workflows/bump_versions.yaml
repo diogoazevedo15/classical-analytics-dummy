@@ -32,7 +32,12 @@ jobs:
 
       - name: Bump version
         id: bump_version
-        run: python .github/scripts/bump_versions.py
+        run: |
+          if [ -z "${{ github.event.pull_request.labels }}" ]; then
+            echo "PR_LABELS is empty or not set. Exiting."
+            exit 1
+          fi
+          python .github/scripts/bump_versions.py
         env:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

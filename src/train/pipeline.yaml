@@ -25,7 +25,7 @@ jobs:
     outputs:
       output_url:  ${{ parent.outputs.process_data_output }}
 
-  train-model:
+  train_model:
     type: command
     component: azureml:train_model@latest
     inputs:

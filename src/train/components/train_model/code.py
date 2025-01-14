@@ -3,7 +3,8 @@ def main():
 
     print("Hello from train-model")
     utils_fun
-    # Mockup changes 17
+    print("Hello")
+    # Mockup changes 18
 
 
 if __name__ == "__main__":

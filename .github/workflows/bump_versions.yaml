@@ -1,19 +1,24 @@
 name: Bump Versions
 
 on:
-  pull_request_target:
-    types: [labeled]
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: read
 
 jobs:
   bump-version:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          # Use the head ref to get the latest code
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0  # Fetch all history so we can push later
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0  # Fetch all history for accurate git info
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -24,12 +29,12 @@ jobs:
         run: pip install pyyaml
 
       - name: Bump version
-        run: python .github/scripts/bump_versions.py
+        run: python .github/scripts/bump_version.py
         env:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
 
       - name: Commit and push changes
         if: steps.bump-version.outcome == 'success'
@@ -38,6 +43,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add version.yaml
           git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push origin HEAD:${{ env.BASE_REF }}

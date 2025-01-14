@@ -1,4 +1,4 @@
-name: Deploy pipelines
+name: "Deploy Pipelines"
 
 on:
   workflow_run:

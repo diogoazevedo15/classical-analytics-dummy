@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   bump-version:
-    # Only run if the PR was actually merged, not just closed
+    # Only run if the PR was merged (not just closed).
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -17,7 +17,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
         with:
-          # "base.ref" is the PR's target branch
+          # "base.ref" is the PR's target branch (e.g. main or dev)
           ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
@@ -36,17 +36,40 @@ jobs:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
-          # Only needed if your script references it. If not, you can remove it
           BASE_REF: ${{ github.event.pull_request.base.ref }}
 
       - name: Commit and push changes
         if: steps.bump_version.outcome == 'success'
         run: |
+          # Configure Git
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
+          # Commit your bumped version changes (if there are any)
           git add version.yaml
-          git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
-          # Push directly into the PR's target (base) branch
-          git push origin HEAD:${{ github.event.pull_request.base.ref }}
+          git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels" || echo "No changes to commit."
+
+          # Push to the PR’s target branch (e.g., main or dev)
+          git push origin HEAD:${{ env.BASE_REF }}
+
+          # If the target branch was main, also merge main into dev.
+          if [ "${{ github.event.pull_request.base.ref }}" = "main" ]; then
+            echo "Merging main into dev..."
+
+            # 1) Fetch the dev branch, so you have it locally
+            git fetch origin dev
+
+            # 2) Checkout dev locally
+            git checkout dev || git checkout -b dev
+
+            # 3) Merge main into dev (this can produce conflicts!)
+            git merge main
+
+            # If there are conflicts, you must resolve them (this script won't do that automatically).
+            # If the merge doesn't have conflicts, continue:
+
+            # 4) Push dev back to origin
+            git push origin dev
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

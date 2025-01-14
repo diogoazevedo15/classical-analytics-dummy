@@ -3,7 +3,6 @@ def main():
 
     print("Hello from train-model")
     utils_fun
-    print("Stuff")
     # Mockup changes 16
 
 

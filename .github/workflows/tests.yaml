@@ -2,12 +2,11 @@ name: "Tests"
 
 on:
   workflow_run:
-    workflows: ["Lint"]            # Must match the `name:` of the Lint workflow
+    workflows: ["Lint"]
     types: [completed]
 
 jobs:
   tests_job:
-    # Only run if Lint concluded with success
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 

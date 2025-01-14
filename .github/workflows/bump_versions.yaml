@@ -9,22 +9,22 @@ permissions:
 
 jobs:
   bump-version:
-    # Only run if the PR was merged (not just closed).
+    # Only run if the PR was actually merged, not just closed
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repo
+      - name: Check out repository
         uses: actions/checkout@v3
         with:
-          # The base ref is the branch into which the PR was merged
+          # "base.ref" is the PR's target branch
           ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install dependencies
         run: pip install pyyaml
@@ -35,8 +35,9 @@ jobs:
         env:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
+          # Only needed if your script references it. If not, you can remove it
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
 
       - name: Commit and push changes
         if: steps.bump_version.outcome == 'success'
@@ -45,7 +46,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add version.yaml
           git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
-          # Push to the base branch (e.g., 'main') the PR was merged into
-          git push origin ${{ env.BASE_REF }}
+          # Push directly into the PR's target (base) branch
+          git push origin HEAD:${{ github.event.pull_request.base.ref }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

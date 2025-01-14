@@ -29,7 +29,7 @@ jobs:
         run: pip install pyyaml
 
       - name: Bump version
-        run: python .github/scripts/bump_version.py
+        run: python .github/scripts/bump_versions.py
         env:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

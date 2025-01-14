@@ -35,9 +35,12 @@ jobs:
       - name: Configure defaults
         run: az configure --defaults group=$AZURE_RESOURCE_GROUP workspace=$AZURE_WORKSPACE_NAME subscription=$AZURE_SUBSCRIPTION_ID
 
+      - name: List directory contents
+        run: ls -R src/train/components/
+
       - name: Deploy environments and components
         run: |
-          for dir in ../src/train/components/*/; do
+          for dir in src/train/components/*/; do
             echo "Processing $dir"
             if [ -f "$dir/env.yaml" ]; then
               echo "Deploying environment in $dir"
@@ -55,4 +58,4 @@ jobs:
 
       # Create or update pipeline
       - name: Create or update pipeline
-        run: az ml component create --file ../src/train/pipeline.yaml
+        run: az ml component create --file src/train/pipeline.yaml

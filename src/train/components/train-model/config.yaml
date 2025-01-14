@@ -3,9 +3,13 @@ name: train-model
 display_name: train-model
 version: 1
 type: command
-inputs:
 
+inputs:
+  input_url:
+    type: uri_folder
 outputs:
+  output_url:
+    type: uri_folder
 
 code: code.py
 environment: azureml:env-train-model@latest

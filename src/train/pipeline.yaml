@@ -6,21 +6,30 @@ version: 1
 
 # Component-level inputs
 inputs:
+  input_url:
+    type: uri_folder
+    description: "Input data url where the data will be downloaded from."
 
 outputs:
+  process_data_output:
+    type: uri_folder
+  train_output_url:
+    type: uri_folder
 
 jobs:
-  process-data:
+
+  process_data:
     type: command
     component: azureml:process-data@latest
     inputs:
-
+      input_url: ${{ parent.inputs.input_url }}
     outputs:
-
+      output_url:  ${{ parent.outputs.process_data_output }}
 
   train-model:
     type: command
     component: azureml:train-model@latest
     inputs:
-
+      input_url: ${{ parent.jobs.process_data.outputs.output_url }}
     outputs:
+      output_url:  ${{ parent.outputs.train_output_url }}

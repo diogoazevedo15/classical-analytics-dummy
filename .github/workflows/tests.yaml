@@ -1,0 +1,29 @@
+name: "Tests"
+
+on:
+  workflow_run:
+    workflows: ["Lint"]            # Must match the `name:` of the Lint workflow
+    types: [completed]
+
+jobs:
+  tests_job:
+    # Only run if Lint concluded with success
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          pip install pytest
+
+      - name: Run Tests
+        run: |
+          pytest src/

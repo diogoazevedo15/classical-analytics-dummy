@@ -1,0 +1,67 @@
+name: "Tag & Merge PR After Deployment"
+
+on:
+  workflow_run:
+    workflows: ["Deploy Pipelines"]   # Must match the 'name:' in your deploy workflow
+    types: [completed]
+
+permissions:
+  contents: write      # Needed to push tags
+  pull-requests: write # Needed to merge PR
+
+jobs:
+  tag_and_merge:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Extract PR info (number, head SHA) from the event payload
+      - name: Extract PR info
+        id: extract_pr
+        run: |
+          # The 'pull_requests' array usually has a single item if there's only one PR.
+          # We'll store the PR number and head SHA in environment variables for later steps.
+          echo "PR_NUMBER=${{ github.event.workflow_run.pull_requests[0].number }}" >> $GITHUB_ENV
+          echo "PR_HEAD_SHA=${{ github.event.workflow_run.pull_requests[0].head.sha }}" >> $GITHUB_ENV
+
+      # 2. Check out the PR's HEAD commit
+      - name: Check out PR HEAD
+        uses: actions/checkout@v3
+        with:
+          # Pull the specific commit SHA from the PR that started everything
+          ref: ${{ env.PR_HEAD_SHA }}
+          fetch-depth: 0
+
+      # 3. Install tooling to parse version.yaml (if you use yq or python, adapt to your style)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          pip install yq
+
+      # 4. Create a Git tag based on version.yaml
+      - name: Create & Push Tag
+        run: |
+          VERSION=$(yq e '.solution_version' version.yaml)
+          echo "Found version: $VERSION"
+
+          # Configure Git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Tag the *specific commit* from the PR HEAD
+          git tag "v$VERSION" ${{ env.PR_HEAD_SHA }}
+          git push origin "v$VERSION"
+
+      # 5. Auto-merge the PR onto its target branch
+      - name: Merge Pull Request
+        uses: devops-actions/merge-pull-request@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pull_request_number: ${{ env.PR_NUMBER }}
+          merge_method: squash
+          commit_title: "Automated Merge after Deployment"
+          commit_message: "Merging PR #${{ env.PR_NUMBER }} to target branch"

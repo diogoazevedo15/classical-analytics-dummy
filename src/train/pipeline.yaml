@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/PipelineComponent.schema.json
 type: pipeline
 name: train_pipeline
-display_name: CV Pipeline Updated
+display_name: train_pipeline
 version: 1
 
 # Component-level inputs
@@ -17,7 +17,6 @@ outputs:
     type: uri_folder
 
 jobs:
-
   process_data:
     type: command
     component: azureml:process_data@latest

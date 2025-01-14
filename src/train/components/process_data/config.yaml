@@ -1,9 +1,8 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
-name: train_model
-display_name: train-model
+name: process_data
+display_name: process_data
 version: 1
 type: command
-
 inputs:
   input_url:
     type: uri_folder
@@ -12,6 +11,6 @@ outputs:
     type: uri_folder
 
 code: code.py
-environment: azureml:env-train-model@latest
+environment: azureml:env-process-data@latest
 command: >
   python code.py

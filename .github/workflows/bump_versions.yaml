@@ -10,14 +10,15 @@ permissions:
 
 jobs:
   bump-version:
-    # Only run if the PR was actually merged (not just closed)
+    # Only run if the PR was merged (not just closed).
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Check out repo
         uses: actions/checkout@v3
         with:
+          # The base ref is the branch into which the PR was merged
           ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
 
@@ -38,12 +39,6 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
 
-      - name: Check Git status
-        run: git status
-
-      - name: Check Git diff
-        run: git diff
-
       - name: Commit and push changes
         if: steps.bump_version.outcome == 'success'
         run: |
@@ -51,6 +46,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add version.yaml
           git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
+          # Note: Use HEAD:${{ env.BASE_REF }} so it pushes to the branch
           git push origin HEAD:${{ env.BASE_REF }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

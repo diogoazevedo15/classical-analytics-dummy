@@ -42,13 +42,13 @@ jobs:
       - name: Check Git diff
         run: git diff
 
-      - name: Commit and push changes
-        if: steps.bump-version.outcome == 'success'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add version.yaml
-          git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
-          git push origin HEAD:${{ env.BASE_REF }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  - name: Commit and push changes
+    if: steps.bump-version.outcome == 'success'
+    run: |
+      git config --local user.email "action@github.com"
+      git config --local user.name "GitHub Action"
+      git add version.yaml
+      git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
+      git push origin HEAD:${{ env.BASE_REF }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

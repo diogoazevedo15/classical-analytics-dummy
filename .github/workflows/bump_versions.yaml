@@ -49,8 +49,8 @@ jobs:
           git add version.yaml
           git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels" || echo "No changes to commit."
 
-          # Push to the PR’s target branch (e.g., main or dev)
-          git push origin HEAD:${{ env.BASE_REF }}
+          # Push to the PR's target branch (e.g., main or dev)
+          git push origin {{ env.BASE_REF }}
 
           # If the target branch was main, also merge main into dev.
           if [ "${{ github.event.pull_request.base.ref }}" = "main" ]; then

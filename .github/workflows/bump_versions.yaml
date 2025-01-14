@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.base.ref }}
-          fetch-depth: 0  # Fetch all history for accurate git info
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -29,20 +29,26 @@ jobs:
         run: pip install pyyaml
 
       - name: Bump version
-        run: python .github/scripts/bump_versions.py
+        run: python .github/scripts/bump_version.py
         env:
           PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
 
-         - name: Commit and push changes
-          if: steps.bump-version.outcome == 'success'
-          run: |
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add version.yaml
-            git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
-            git push origin HEAD:${{ env.BASE_REF }}
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check Git status
+        run: git status
+
+      - name: Check Git diff
+        run: git diff
+
+      - name: Commit and push changes
+        if: steps.bump-version.outcome == 'success'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.yaml
+          git commit -m "Bump version based on PR #${{ env.PR_NUMBER }} labels"
+          git push origin HEAD:${{ env.BASE_REF }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

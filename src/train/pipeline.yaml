@@ -20,7 +20,7 @@ jobs:
 
   process_data:
     type: command
-    component: azureml:process-data@latest
+    component: azureml:process_data@latest
     inputs:
       input_url: ${{ parent.inputs.input_url }}
     outputs:
@@ -28,7 +28,7 @@ jobs:
 
   train-model:
     type: command
-    component: azureml:train-model@latest
+    component: azureml:train_model@latest
     inputs:
       input_url: ${{ parent.jobs.process_data.outputs.output_url }}
     outputs:

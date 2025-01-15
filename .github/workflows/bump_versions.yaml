@@ -1,17 +1,15 @@
 name: Bump Versions
 
 on:
-  workflow_run:
-    workflows: ["Tests"]  # Must match the 'name:' in check_approvals.yaml
-    types: [completed]
+  pull_request:
+    branches: [dev, main]
+    types: [opened]
 
 permissions:
   contents: write
 
 jobs:
   bump-version:
-    # Only run if the PR was merged (not just closed).
-    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
     steps:
@@ -59,5 +57,4 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "chore: Bump version after merge (PR #${{ github.event.pull_request.number }})"
-            git push origin ${{ github.event.pull_request.base.ref }}
           fi

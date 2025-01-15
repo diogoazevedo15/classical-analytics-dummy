@@ -52,7 +52,7 @@ def has_label_combination(labels: list[str], combinations: list[list[str]]) -> b
 
 def read_version(file_path: str) -> tuple[int, int]:
     """
-    Reads the version in 'major.minor' format from a YAML file.
+    Reads the version in 'prod.dev' format from a YAML file.
     Returns (major, minor) as integers.
     If the file or version key is missing, defaults to '0.0'.
     """
@@ -73,7 +73,7 @@ def read_version(file_path: str) -> tuple[int, int]:
 
 def write_version(file_path: str, major: int, minor: int) -> None:
     """
-    Writes the version in 'major.minor' format back to the YAML file.
+    Writes the version in 'prod.dev' format back to the YAML file.
     """
     data = {"version": f"{major}.{minor}"}
     with open(file_path, "w", encoding="utf-8") as f:
@@ -87,6 +87,7 @@ def main():
     print(f"Labels: {labels}")
 
     # Check if any of the required label combinations is present
+    print(f"labels:{labels}")
     if not has_label_combination(labels, REQUIRED_LABEL_COMBINATIONS):
         print("No matching label combinations found. Version not bumped.")
         sys.exit(0)

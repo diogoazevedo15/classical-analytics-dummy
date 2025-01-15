@@ -44,24 +44,18 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // We'll fetch the PR details (including head SHA) via the API:
-            const prNumber = parseInt('${{ inputs.pull_request_number }}', 10);
-
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-
+            const pr = context.payload.pull_request;
             const { data: { check_runs } } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.head.sha,
             });
 
+            // Initialize status variables
             let lintCheckPassed = false;
             let repositoryTestsPassed = false;
 
+            // Iterate over check runs to find the ones we're interested in
             for (const check of check_runs) {
               if (check.name === 'Lint Check' && check.conclusion === 'success') {
                 lintCheckPassed = true;
@@ -80,3 +74,4 @@ jobs:
 
             if (lintCheckPassed && repositoryTestsPassed) {
               console.log('All required checks have passed.');
+            }

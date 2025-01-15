@@ -13,6 +13,7 @@ permissions:
   pull-requests: write
 
 jobs:
+  # 1) Lint Job
   lint_job:
     name: Lint Code
     runs-on: ubuntu-latest
@@ -31,10 +32,11 @@ jobs:
       - name: Run Lint
         run: flake8 src/
 
+  # 2) Tests Job
   tests_job:
     name: Run Tests
-    needs: lint_job
-    if: ${{ github.event_name == 'pull_request' }}
+    needs: [lint_job]
+    if: ${{ needs.lint_job.result == 'success' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -51,10 +53,11 @@ jobs:
       - name: Run Tests
         run: pytest tests/
 
+  # 3) Bump Version Job
   bump_version_job:
     name: Bump Version
-    needs: tests_job
-    if: ${{ github.event_name == 'push' }}
+    needs: [tests_job]
+    if: ${{ needs.tests_job.result == 'success' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -93,9 +96,10 @@ jobs:
             git push origin ${{ github.ref }}
           fi
 
+  # 4) Deploy Job
   deploy_job:
     name: Deploy Pipelines
-    needs: bump_version_job
+    needs: [bump_version_job]
     if: ${{ needs.bump_version_job.result == 'success' }}
     runs-on: ubuntu-latest
     env:
@@ -150,9 +154,10 @@ jobs:
       - name: Create or Update Pipeline
         run: az ml component create --file src/train/pipeline.yaml
 
+  # 5) Tag & Merge Job
   tag_and_merge_job:
     name: Tag and Merge PR
-    needs: deploy_job
+    needs: [deploy_job]
     if: ${{ needs.deploy_job.result == 'success' }}
     runs-on: ubuntu-latest
     steps:

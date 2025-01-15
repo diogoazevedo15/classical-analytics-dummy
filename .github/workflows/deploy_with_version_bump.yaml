@@ -45,7 +45,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
         with:
-          # Checkout the PR's source branch
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
@@ -90,24 +89,47 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add version.yaml src/train/ src/inference/
           git commit -m "chore: Updated versions to ${{ env.new_version }}"
-          # Push changes back to the PR's source branch
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      # Update PR Source Branch with Base Branch
+      - name: Update PR Source Branch with Base Branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git checkout ${{ github.event.pull_request.head.ref }}
+          git merge --no-edit origin/${{ github.event.pull_request.base.ref }}
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Deploy Pipelines
         id: deploy_pipeline
         continue-on-error: true
         run: |
-          # Replace the following command with your actual deployment command.
-          # For example, you might run a script or use Azure CLI commands.
           echo "Starting deployment..."
           # Simulate deployment success/failure
           # exit 1  # Uncomment to simulate failure
           echo "Deployment completed successfully."
 
-      - name: Check Deployment Result and Rollback if Necessary
-        if: steps.deploy_pipeline.outcome == 'failure'
+      # Merge Pull Request Step
+      - name: Merge Pull Request
+        if: success() && github.event_name == 'pull_request_review'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: 'squash'
+            })
+
+      # Rollback Step
+      - name: Rollback on Failure
+        if: failure()
         run: |
-          echo "Deployment failed. Rolling back to old version."
+          echo "A failure occurred after the version bump. Rolling back to old version."
           # Revert version.yaml to old_version
           echo "version: '${{ env.old_version }}'" > version.yaml
           # Run set_azure_versions.py with old_version
@@ -116,19 +138,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add version.yaml src/train/ src/inference/
-          git commit -m "chore: Rollback to version ${{ env.old_version }} due to deployment failure"
-          # Push rollback changes back to the PR's source branch
+          git commit -m "chore: Rollback to version ${{ env.old_version }} due to failure"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
           exit 1  # Fail the workflow to indicate deployment failure
-
-      - name: Merge Pull Request
-        if: success() && github.event_name == 'pull_request_review'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              merge_method: 'squash'
-            })

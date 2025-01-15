@@ -16,7 +16,7 @@ jobs:
       old_version: ${{ steps.get_version.outputs.old_version }}
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -24,13 +24,17 @@ jobs:
         with:
           python-version: "3.9"
 
+      - name: Install Python dependencies
+        run: |
+          pip install pyyaml
+
       - name: Get old version
         id: get_version
         run: |
-          old_version=$(python ./.github/scripts/bump_versions.py get_version)
+          old_version=$(python .github/scripts/bump_versions.py get_version)
           echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
 
       - name: Bump version
         run: |
-          python scripts/bump_versions.py bump
+          python .github/scripts/bump_versions.py bump

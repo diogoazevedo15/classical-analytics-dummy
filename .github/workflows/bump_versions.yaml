@@ -1,0 +1,36 @@
+name: "Bump Versions Reusable"
+
+on:
+  workflow_call:
+    inputs:
+      pull_request_number:
+        description: "The number of the pull request (if you need it)."
+        required: false
+        type: number
+
+jobs:
+  bump_versions:
+    runs-on: ubuntu-latest
+
+    outputs:
+      old_version: ${{ steps.get_version.outputs.old_version }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Get old version
+        id: get_version
+        run: |
+          old_version=$(python scripts/bump_versions.py get_version)
+          echo "Current version: $old_version"
+          echo "old_version=$old_version" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        run: |
+          python scripts/bump_versions.py bump

@@ -4,25 +4,33 @@ on:
   workflow_call:
     inputs:
       pull_request_number:
-        description: 'The number of the pull request.'
+        description: "The pull request number"
         required: true
         type: number
 
 jobs:
   check-approvals:
     runs-on: ubuntu-latest
-    outputs:
-      approvals: ${{ steps.check_approvals.outputs.approvals }}
     steps:
+      - name: Install GH CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Check approvals
         id: check_approvals
         run: |
-          APPROVALS=$(gh pr view ${{ inputs.pull_request_number }} --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
+          # Read the PR number from inputs rather than from github.event
+          PR_NUMBER="${{ inputs.pull_request_number }}"
+          echo "Pull Request number: $PR_NUMBER"
+
+          # Retrieve number of APPROVED reviews
+          APPROVALS=$(gh pr view "$PR_NUMBER" --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
           echo "Number of approvals: $APPROVALS"
-          echo "::set-output name=approvals::$APPROVALS"
+
           if [ "$APPROVALS" -lt 1 ]; then
             echo "Not enough approvals"
             exit 1
@@ -30,29 +38,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  check-checks:
-    needs: check-approvals
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Check required checks status
+        id: check_checks
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = ${{ inputs.pull_request_number }};
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-
+            const pr = context.payload.pull_request;
             const { data: { check_runs } } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: pr.data.head.sha,
+              ref: pr.head.sha,
             });
 
             // Initialize status variables
@@ -78,3 +74,4 @@ jobs:
 
             if (lintCheckPassed && repositoryTestsPassed) {
               console.log('All required checks have passed.');
+            }

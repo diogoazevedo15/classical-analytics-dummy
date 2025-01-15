@@ -28,7 +28,6 @@ jobs:
   # 2) Tests Job
   tests_job:
     name: Run Tests
-    if: ${{ needs.lint_job.result == 'success' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

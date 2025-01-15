@@ -7,7 +7,7 @@ on:
 jobs:
   call-deploy-workflow:
     name: "On Approve"
-    uses: on_approve.yaml
+    uses: on-approve.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 

@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: On-Approve
         if: steps.is_approval.outcome == 'success'
-        uses: ./.github/workflows/on-approve.yaml@main
+        uses: ./.github/workflows/on-approve.yaml
         with:
           pull_request_number: ${{ github.event.pull_request.number }}
 
@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Call Bump-Versions Reusable Workflow
         id: call_reusable
-        uses: ./.github/workflows/bump-versions.yaml@main
+        uses: ./.github/workflows/bump-versions.yaml
         with:
           # If needed
           pull_request_number: ${{ github.event.pull_request.number }}

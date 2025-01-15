@@ -87,7 +87,6 @@ def main():
     print(f"Labels: {labels}")
 
     # Check if any of the required label combinations is present
-    print(f"labels:{labels}")
     if not has_label_combination(labels, REQUIRED_LABEL_COMBINATIONS):
         print("No matching label combinations found. Version not bumped.")
         sys.exit(0)

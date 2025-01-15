@@ -1,37 +1,20 @@
-name: "On Approve"
-
+name: On approve
 on:
-  workflow_call:
-    inputs:
-      pull_request_number:
-        description: 'The number of the pull request.'
-        required: true
-        type: number
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   check-approvals:
     runs-on: ubuntu-latest
-    outputs:
-      approvals: ${{ steps.check_approvals.outputs.approvals }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install GitHub CLI (if needed)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gh
+        uses: actions/checkout@v2
 
       - name: Check approvals
         id: check_approvals
         run: |
-          # Convert pull_request_number to an integer, just in case
-          PR_NUMBER=${{ inputs.pull_request_number }}
-
-          APPROVALS=$(gh pr view "$PR_NUMBER" --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
+          APPROVALS=$(gh pr view ${{ github.event.pull_request.number }} --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
           echo "Number of approvals: $APPROVALS"
-
-          echo "::set-output name=approvals::$APPROVALS"
           if [ "$APPROVALS" -lt 1 ]; then
             echo "Not enough approvals"
             exit 1
@@ -39,29 +22,40 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  check-checks:
-    needs: check-approvals
-    runs-on: ubuntu-latest
-    steps:
       - name: Check required checks status
         id: check_checks
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          SHA=$(gh pr view $PR_NUMBER --json headRefOid -q '.headRefOid')
-          STATUS_JSON=$(gh api repos/${{ github.repository_owner }}/${{ github.event.repository.name }}/commits/$SHA/check-runs)
-          LINT_STATUS=$(echo "$STATUS_JSON" | jq -r '.check_runs[] | select(.name=="Lint Check") | .conclusion')
-          TESTS_STATUS=$(echo "$STATUS_JSON" | jq -r '.check_runs[] | select(.name=="Repository Tests") | .conclusion')
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const { data: { check_runs } } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha,
+            });
 
-          if [ "$LINT_STATUS" != "success" ]; then
-            echo "Lint Check did not pass."
-            exit 1
-          fi
+            // Initialize status variables
+            let lintCheckPassed = false;
+            let repositoryTestsPassed = false;
 
-          if [ "$TESTS_STATUS" != "success" ]; then
-            echo "Repository Tests did not pass."
-            exit 1
-          fi
+            // Iterate over check runs to find the ones we're interested in
+            for (const check of check_runs) {
+              if (check.name === 'Lint Check' && check.conclusion === 'success') {
+                lintCheckPassed = true;
+              } else if (check.name === 'Repository Tests' && check.conclusion === 'success') {
+                repositoryTestsPassed = true;
+              }
+            }
 
-          echo "All required checks have passed."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            if (!lintCheckPassed) {
+              core.setFailed('Lint Check did not pass.');
+            }
+
+            if (!repositoryTestsPassed) {
+              core.setFailed('Repository Tests did not pass.');
+            }
+
+            if (lintCheckPassed && repositoryTestsPassed) {
+              console.log('All required checks have passed.');
+            }

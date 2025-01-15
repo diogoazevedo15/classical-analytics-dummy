@@ -1,3 +1,12 @@
+"""
+Script for bumping version numbers based on specific label combinations
+from pull request events. The script reads the current version from a
+YAML file, checks for required label combinations, and updates the version
+accordingly. It is designed to be used in a CI/CD pipeline to automate
+version management.
+"""
+
+
 import json
 import os
 import sys

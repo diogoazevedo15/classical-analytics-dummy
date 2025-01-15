@@ -1,0 +1,25 @@
+name: "CICD Pipeline"
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  call-deploy-workflow:
+    name: "On Approve"
+    uses: on-approve.yaml
+    with:
+      pull_request_number: ${{ github.event.pull_request.number }}
+
+  additional-job:
+    name: Additional Job
+    needs: call-deploy-workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Perform additional tasks
+        run: |
+          echo "Running additional tasks after deploy workflow..."
+          # Add your additional commands here

@@ -1,0 +1,80 @@
+name: "On Approve"
+
+on:
+  workflow_call:
+    inputs:
+      pull_request_number:
+        description: 'The number of the pull request.'
+        required: true
+        type: number
+
+jobs:
+  check-approvals:
+    runs-on: ubuntu-latest
+    outputs:
+      approvals: ${{ steps.check_approvals.outputs.approvals }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check approvals
+        id: check_approvals
+        run: |
+          APPROVALS=$(gh pr view ${{ inputs.pull_request_number }} --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
+          echo "Number of approvals: $APPROVALS"
+          echo "::set-output name=approvals::$APPROVALS"
+          if [ "$APPROVALS" -lt 1 ]; then
+            echo "Not enough approvals"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  check-checks:
+    needs: check-approvals
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check required checks status
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = ${{ inputs.pull_request_number }};
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const { data: { check_runs } } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.data.head.sha,
+            });
+
+            // Initialize status variables
+            let lintCheckPassed = false;
+            let repositoryTestsPassed = false;
+
+            // Iterate over check runs to find the ones we're interested in
+            for (const check of check_runs) {
+              if (check.name === 'Lint Check' && check.conclusion === 'success') {
+                lintCheckPassed = true;
+              } else if (check.name === 'Repository Tests' && check.conclusion === 'success') {
+                repositoryTestsPassed = true;
+              }
+            }
+
+            if (!lintCheckPassed) {
+              core.setFailed('Lint Check did not pass.');
+            }
+
+            if (!repositoryTestsPassed) {
+              core.setFailed('Repository Tests did not pass.');
+            }
+
+            if (lintCheckPassed && repositoryTestsPassed) {
+              console.log('All required checks have passed.');

@@ -1,3 +1,5 @@
+# bump_versions.py
+
 import json
 import os
 import sys
@@ -11,7 +13,7 @@ def main():
     pr_labels = json.loads(pr_labels_json)
     labels = [label["name"] for label in pr_labels]
 
-    print(f"labels: {labels}")
+    print(f"Labels: {labels}")
 
     # Define label combinations
     label_combinations = [
@@ -63,6 +65,11 @@ def main():
         yaml.dump(data, f)
 
     print(f"Version updated to {new_version}")
+
+    # Output the new version for GitHub Actions
+    # Using environment file for output
+    with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+        print(f"new_version={new_version}", file=f)
 
 
 if __name__ == "__main__":

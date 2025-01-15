@@ -1,0 +1,129 @@
+name: Deploy with Version Bump
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Check approvals
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          APPROVALS=$(gh pr view $PR_NUMBER --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
+          echo "Number of approvals: $APPROVALS"
+          if [ "$APPROVALS" -lt 1 ]; then
+            echo "Not enough approvals"
+            exit 1
+          fi
+
+  deploy_with_version_bump:
+    needs: [check-approvals]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Load old version
+        id: load_old_version
+        shell: bash
+        run: |
+          version=$(awk '/^version:/ {print $2}' version.yaml)
+          echo "Old version: $version"
+          echo "old_version=$version" >> $GITHUB_ENV
+
+      - name: Bump version
+        id: bump_version
+        shell: bash
+        env:
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
+        run: |
+          python .github/scripts/bump_versions.py
+
+      - name: Get new version
+        id: get_new_version
+        run: |
+          new_version=$(awk '/^version:/ {print $2}' version.yaml)
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_ENV
+
+      - name: Update versions in Azure components
+        run: |
+          python .github/scripts/set_azure_versions.py ${{ env.new_version }}
+
+      - name: Commit version changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.yaml src/train/ src/inference/
+          git commit -m "chore: Updated versions to ${{ env.new_version }}"
+          git push origin HEAD:${{ github.ref }}
+
+      - name: Deploy Pipelines
+        id: deploy_pipeline
+        continue-on-error: true
+        run: |
+          # Replace the following command with your actual deployment command.
+          # For example, you might run a script or use Azure CLI commands.
+          echo "Starting deployment..."
+          # Simulate deployment success/failure
+          # exit 1  # Uncomment to simulate failure
+          echo "Deployment completed successfully."
+
+      - name: Check Deployment Result and Rollback if Necessary
+        if: steps.deploy_pipeline.outcome == 'failure'
+        run: |
+          echo "Deployment failed. Rolling back to old version."
+          # Revert version.yaml to old_version
+          echo "version: '${{ env.old_version }}'" > version.yaml
+          # Run set_azure_versions.py with old_version
+          python .github/scripts/set_azure_versions.py ${{ env.old_version }}
+          # Commit rollback changes
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.yaml src/train/ src/inference/
+          git commit -m "chore: Rollback to version ${{ env.old_version }} due to deployment failure"
+          git push origin HEAD:${{ github.ref }}
+          exit 1  # Fail the workflow to indicate deployment failure
+
+      - name: Merge Pull Request
+        if: success() && github.event_name == 'pull_request_review'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: 'squash'
+            })

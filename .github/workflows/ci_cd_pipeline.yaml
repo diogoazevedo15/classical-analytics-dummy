@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: "CI/CD Pipeline"
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  # 1) Lint Job
+  # 1) Lint
   lint_job:
     name: Lint Code
     runs-on: ubuntu-latest
@@ -32,12 +32,12 @@ jobs:
       - name: Run Lint
         run: flake8 src/
 
-  # 2) Tests Job
+  # 2) Tests
   tests_job:
     name: Run Tests
-    needs: [lint_job]
-    if: ${{ needs.lint_job.result == 'success' && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
+    # This ensures tests only start if lint_job completed (and succeeded).
+    needs: [lint_job]
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -47,29 +47,28 @@ jobs:
         with:
           python-version: "3.9"
 
-      - name: Install Dependencies
+      - name: Install test dependencies
         run: pip install pytest
 
       - name: Run Tests
         run: pytest tests/
 
-  # 3) Bump Version Job
+  # 3) Bump Version
   bump_version_job:
     name: Bump Version
-    needs: [tests_job]
-    if: ${{ needs.tests_job.result == 'success' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
+    # Only runs after tests pass.
+    needs: [tests_job]
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.ref }}
-          fetch-depth: 0
+          fetch-depth: 0  # So we can push tags or commits if needed
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.9"
 
       - name: Install Dependencies
         run: pip install pyyaml
@@ -78,9 +77,9 @@ jobs:
         run: |
           python .github/scripts/bump_versions.py
         env:
-          PR_NUMBER: ${{ github.event.number }}
-          PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 'none' }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels || []) }}
+          PR_TITLE: ${{ github.event.pull_request.title || 'no-title' }}
           BASE_REF: ${{ github.ref }}
 
       - name: Commit Changes
@@ -92,16 +91,15 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "chore: Bump version after merge (PR #${{ github.event.number }})"
+            git commit -m "chore: Bump version (Auto)"
             git push origin ${{ github.ref }}
-          fi
 
-  # 4) Deploy Job
+  # 4) Deploy
   deploy_job:
-    name: Deploy Pipelines
-    needs: [bump_version_job]
-    if: ${{ needs.bump_version_job.result == 'success' }}
+    name: Deploy Pipeline
     runs-on: ubuntu-latest
+    # Only runs after version bump is successful.
+    needs: [bump_version_job]
     env:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -116,14 +114,14 @@ jobs:
       - name: Install Azure CLI
         run: curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      - name: Login to Azure via Service Principal
+      - name: Azure Login
         run: |
           az login --service-principal \
             --username $AZURE_CLIENT_ID \
             --password $AZURE_CLIENT_SECRET \
             --tenant $AZURE_TENANT_ID
 
-      - name: Install Azure ML CLI extension
+      - name: Install Azure ML CLI
         run: az extension add -n ml --yes
 
       - name: Configure defaults
@@ -154,12 +152,12 @@ jobs:
       - name: Create or Update Pipeline
         run: az ml component create --file src/train/pipeline.yaml
 
-  # 5) Tag & Merge Job
+  # 5) Tag & Merge
   tag_and_merge_job:
     name: Tag and Merge PR
-    needs: [deploy_job]
-    if: ${{ needs.deploy_job.result == 'success' }}
     runs-on: ubuntu-latest
+    # Only runs after deploy_job is successful.
+    needs: [deploy_job]
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -174,8 +172,8 @@ jobs:
 
       - name: Extract PR Info
         run: |
-          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          echo "PR_HEAD_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          echo "PR_NUMBER=${{ github.event.pull_request.number || '' }}" >> $GITHUB_ENV
+          echo "PR_HEAD_SHA=${{ github.event.pull_request.head.sha || '' }}" >> $GITHUB_ENV
 
       - name: Create & Push Tag
         run: |
@@ -183,14 +181,20 @@ jobs:
           echo "Found version: $VERSION"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$VERSION" ${{ env.PR_HEAD_SHA }}
-          git push origin "v$VERSION"
+
+          # If there's no PR_HEAD_SHA, this might be a direct push rather than a PR
+          if [ -n "${PR_HEAD_SHA}" ]; then
+            git tag "v$VERSION" "$PR_HEAD_SHA"
+            git push origin "v$VERSION"
+          else
+            echo "No PR HEAD SHA found, skipping tag creation."
+          fi
 
       - name: Merge Pull Request
-        uses: devops-actions/merge-pull-request@v2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          pull_request_number: ${{ env.PR_NUMBER }}
-          merge_method: squash
-          commit_title: "Automated Merge after Deployment"
-          commit_message: "Merging PR #${{ env.PR_NUMBER }} to target branch"
+        # This step merges the PR if it exists
+        run: |
+          if [ -n "${PR_NUMBER}" ]; then
+            echo "Merging PR #${PR_NUMBER}..."
+            gh pr merge ${PR_NUMBER} --repo "${{ github.repository }}" --merge --auto
+          else
+            echo "No PR_NUMBER found, skipping merge."

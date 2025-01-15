@@ -1,4 +1,4 @@
-name: "Deploy pipeline"
+name: Deploy pipeline
 
 on:
   workflow_run:
@@ -7,11 +7,14 @@ on:
 
 jobs:
   check-approvals:
-    # if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Set GH_TOKEN
+        run: echo "GH_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
 
       - name: Check approvals
         id: check
@@ -21,3 +24,5 @@ jobs:
           if [ "$APPROVALS" -lt 2 ]; then
             echo "Not enough approvals"
             exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

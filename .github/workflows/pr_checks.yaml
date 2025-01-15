@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: PR Checks
 
 on:
   pull_request:
@@ -7,8 +7,8 @@ on:
 
 jobs:
   # 1) Lint Job
-  lint_job:
-    name: Lint Code
+  lint_check:
+    name: Lint Check
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -26,8 +26,8 @@ jobs:
         run: flake8 src/
 
   # 2) Tests Job
-  tests_job:
-    name: Run Tests
+  repository_tests:
+    name: Repository Tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

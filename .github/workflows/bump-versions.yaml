@@ -7,10 +7,29 @@ on:
         description: "The number of the pull request (if you need it)."
         required: false
         type: number
+      pr_labels:
+        description: "The PR labels in JSON format."
+        required: false
+        type: string
+      pr_title:
+        description: "The PR title."
+        required: false
+        type: string
+      base_ref:
+        description: "The base ref of the PR."
+        required: false
+        type: string
 
 jobs:
   bump_versions:
     runs-on: ubuntu-latest
+
+    # Set environment variables using the inputs:
+    env:
+      PR_NUMBER: ${{ inputs.pull_request_number }}
+      PR_LABELS: ${{ inputs.pr_labels }}
+      PR_TITLE: ${{ inputs.pr_title }}
+      BASE_REF: ${{ inputs.base_ref }}
 
     outputs:
       old_version: ${{ steps.get_version.outputs.old_version }}
@@ -25,16 +44,15 @@ jobs:
           python-version: "3.9"
 
       - name: Install Python dependencies
-        run: |
-          pip install pyyaml
+        run: pip install pyyaml
 
       - name: Get old version
         id: get_version
         run: |
+          # Here the script will have access to PR_NUMBER, PR_LABELS, etc. if needed.
           old_version=$(python .github/scripts/bump_versions.py get_version)
           echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
 
       - name: Bump version
-        run: |
-          python .github/scripts/bump_versions.py bump
+        run: python .github/scripts/bump_versions.py bump

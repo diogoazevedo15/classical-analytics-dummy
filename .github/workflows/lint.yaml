@@ -1,9 +1,9 @@
 name: "Lint"
 
 on:
-  pull_request:
-    branches: [ "dev", "main" ]
-    types: [opened, reopened, synchronize]
+  workflow_run:
+    workflows: ["Deploy Pipelines"]   # Must match the 'name:' in your deploy workflow
+    types: [completed]
 
 jobs:
   lint_job:

@@ -17,11 +17,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install GitHub CLI (if needed)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh
+
       - name: Check approvals
         id: check_approvals
         run: |
-          APPROVALS=$(gh pr view ${{ inputs.pull_request_number }} --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
+          # Convert pull_request_number to an integer, just in case
+          PR_NUMBER=${{ inputs.pull_request_number }}
+
+          APPROVALS=$(gh pr view "$PR_NUMBER" --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
           echo "Number of approvals: $APPROVALS"
+
           echo "::set-output name=approvals::$APPROVALS"
           if [ "$APPROVALS" -lt 1 ]; then
             echo "Not enough approvals"
@@ -42,36 +51,41 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = ${{ inputs.pull_request_number }};
-            const pr = await github.rest.pulls.get({
+            // Pull Request number from inputs
+            const prNumber = parseInt('${{ inputs.pull_request_number }}', 10);
+
+            // Grab PR info (including head sha)
+            const { data: pullRequest } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
             });
 
-            const { data: { check_runs } } = await github.rest.checks.listForRef({
+            // Get checks for the PR's HEAD SHA
+            const { data: checksData } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: pr.data.head.sha,
+              ref: pullRequest.head.sha,
             });
 
-            // Initialize status variables
+            // Track pass/fail for required checks
             let lintCheckPassed = false;
             let repositoryTestsPassed = false;
 
-            // Iterate over check runs to find the ones we're interested in
-            for (const check of check_runs) {
+            // Go through all check_runs and see if Lint/Tests passed
+            for (const check of checksData.check_runs) {
               if (check.name === 'Lint Check' && check.conclusion === 'success') {
                 lintCheckPassed = true;
-              } else if (check.name === 'Repository Tests' && check.conclusion === 'success') {
+              }
+              else if (check.name === 'Repository Tests' && check.conclusion === 'success') {
                 repositoryTestsPassed = true;
               }
             }
 
+            // Fail if Lint Check or Tests didnt pass
             if (!lintCheckPassed) {
               core.setFailed('Lint Check did not pass.');
             }
-
             if (!repositoryTestsPassed) {
               core.setFailed('Repository Tests did not pass.');
             }

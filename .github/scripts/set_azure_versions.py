@@ -1,9 +1,29 @@
-# set_azure_versions.py
+# .github/scripts/set_azure_versions.py
 
 import os
 import sys
 
 import yaml
+
+
+def set_version_in_data(data, version):
+    if isinstance(data, dict):
+        updated = False
+        if "version" in data:
+            data["version"] = version
+            updated = True
+        # Recursively check nested dictionaries
+        for value in data.values():
+            if isinstance(value, dict):
+                if set_version_in_data(value, version):
+                    updated = True
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        if set_version_in_data(item, version):
+                            updated = True
+        return updated
+    return False
 
 
 def update_versions(version):
@@ -25,16 +45,11 @@ def update_versions(version):
                             print(f"Error parsing {file_path}: {exc}")
                             continue
 
-                    if not isinstance(data, dict):
-                        print(f"Skipping {file_path}: not a valid YAML mapping.")
+                    if data is None:
+                        print(f"Skipping {file_path}: file is empty.")
                         continue
 
-                    if "version" in data:
-                        data["version"] = version
-                        updated = True
-                    else:
-                        updated = False
-
+                    updated = set_version_in_data(data, version)
                     if updated:
                         with open(file_path, "w") as f:
                             yaml.dump(data, f, sort_keys=False)

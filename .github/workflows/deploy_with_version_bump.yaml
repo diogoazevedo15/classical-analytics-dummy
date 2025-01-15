@@ -97,9 +97,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
-          git fetch origin ${{ github.event.pull_request.base.ref }}
+
+          # Fetch the base branch into a local branch named base_branch
+          git fetch origin ${{ github.event.pull_request.base.ref }}:base_branch
+
+          # Checkout the PR's source branch
           git checkout ${{ github.event.pull_request.head.ref }}
-          git merge --no-edit origin/${{ github.event.pull_request.base.ref }}
+
+          # Merge base branch into PR's source branch
+          git merge --no-edit base_branch || {
+            echo "Merge conflicts detected. Aborting merge."
+            exit 1
+          }
+          # Push the updated source branch
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Deploy Pipelines
@@ -107,7 +117,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "Starting deployment..."
-          # Simulate deployment success/failure
+          # Replace the following command with your actual deployment command.
           # exit 1  # Uncomment to simulate failure
           echo "Deployment completed successfully."
 
@@ -118,14 +128,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.pulls.merge({
+            await github.rest.pulls.merge({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
               merge_method: 'squash'
-            })
+            });
 
-      # Rollback Step
+      # Rollback on Failure
       - name: Rollback on Failure
         if: failure()
         run: |

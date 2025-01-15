@@ -11,6 +11,8 @@ def main():
     pr_labels = json.loads(pr_labels_json)
     labels = [label["name"] for label in pr_labels]
 
+    print(f"labels: {labels}")
+
     # Define label combinations
     label_combinations = [
         ["dev", "train"],

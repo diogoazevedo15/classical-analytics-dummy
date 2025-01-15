@@ -12,12 +12,12 @@ permissions:
 jobs:
   on_approve:
     # Instead of `runs-on: ubuntu-latest` and steps, we directly call the reusable workflow:
-    uses: ./.github/workflows/on-approve.yaml@main
+    uses: ./.github/workflows/on-approve.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
   bump_version:
     needs: on_approve
-    uses: ./.github/workflows/bump-versions.yaml@main
+    uses: ./.github/workflows/bump-versions.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}

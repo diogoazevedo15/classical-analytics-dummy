@@ -27,7 +27,7 @@ jobs:
       - name: Get old version
         id: get_version
         run: |
-          old_version=$(python scripts/bump_versions.py get_version)
+          old_version=$(python ./.github/scripts/bump_versions.py get_version)
           echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
 

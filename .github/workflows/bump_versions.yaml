@@ -57,5 +57,4 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "chore: Bump version after merge (PR #${{ github.event.pull_request.number }})"
-            git push origin ${{ github.event.pull_request.base.ref }}
           fi

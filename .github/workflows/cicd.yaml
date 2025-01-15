@@ -18,11 +18,11 @@ jobs:
 
   bump_version:
     needs: on_approve
+    uses: ./.github/workflows/bump-versions.yaml
+    with:
+      pull_request_number: ${{ github.event.pull_request.number }}
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
       PR_TITLE: ${{ github.event.pull_request.title }}
       BASE_REF: ${{ github.event.pull_request.base.ref }}
-    uses: ./.github/workflows/bump-versions.yaml
-    with:
-      pull_request_number: ${{ github.event.pull_request.number }}

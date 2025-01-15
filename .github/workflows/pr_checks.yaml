@@ -1,0 +1,45 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, reopened, synchronize]
+
+jobs:
+  # 1) Lint Job
+  lint_check:
+    name: Lint Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Linter
+        run: pip install flake8
+
+      - name: Run Lint
+        run: flake8 src/
+
+  # 2) Tests Job
+  repository_tests:
+    name: Repository Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Dependencies
+        run: pip install pytest
+
+      - name: Run Tests
+        run: pytest tests/

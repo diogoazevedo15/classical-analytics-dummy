@@ -4,42 +4,87 @@ import sys
 
 import yaml
 
+# Predefine the allowed label combinations that trigger a version bump.
+REQUIRED_LABEL_COMBINATIONS = [
+    ["dev", "train"],
+    ["dev", "inference"],
+    ["prd", "train"],
+    ["prd", "inference"],
+    ["model", "dev"],
+    ["model", "prd"],
+]
 
-def main():
-    # Load PR labels from environment variable
-    pr_labels_json = os.getenv("PR_LABELS", "[]")
-    pr_labels = json.loads(pr_labels_json)
-    labels = [label["name"] for label in pr_labels]
 
-    print(f"labels: {labels}")
-
-    # Define label combinations
-    label_combinations = [
-        ["dev", "train"],
-        ["dev", "inference"],
-        ["prd", "train"],
-        ["prd", "inference"],
-        ["model", "dev"],
-        ["model", "prd"],
+def get_labels_from_env(env_var_name: str = "PR_LABELS") -> list[str]:
+    """
+    Retrieve JSON-formatted labels from an environment variable and parse them.
+    Returns a list of label names.
+    """
+    pr_labels_json = os.getenv(env_var_name, "[]")
+    try:
+        pr_labels = json.loads(pr_labels_json)
+    except json.JSONDecodeError:
+        pr_labels = []
+    return [
+        label["name"]
+        for label in pr_labels
+        if isinstance(label, dict) and "name" in label
     ]
 
-    # Check if PR has any of the required label combinations
-    def has_labels(required_labels, labels):
-        return all(label in labels for label in required_labels)
 
-    matches_combination = any(has_labels(combo, labels) for combo in label_combinations)
+def has_label_combination(labels: list[str], combinations: list[list[str]]) -> bool:
+    """
+    Checks if the given labels list has *any* of the specified required label combinations.
+    """
+    return any(
+        all(req_label in labels for req_label in combo) for combo in combinations
+    )
 
-    if not matches_combination:
+
+def read_version(file_path: str) -> tuple[int, int]:
+    """
+    Reads the version in 'major.minor' format from a YAML file.
+    Returns (major, minor) as integers.
+    If the file or version key is missing, defaults to '0.0'.
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+            version_str = data.get("version", "0.0")
+    except FileNotFoundError:
+        version_str = "0.0"
+
+    try:
+        major, minor = map(int, version_str.split("."))
+    except ValueError:
+        major, minor = 0, 0
+
+    return major, minor
+
+
+def write_version(file_path: str, major: int, minor: int) -> None:
+    """
+    Writes the version in 'major.minor' format back to the YAML file.
+    """
+    data = {"version": f"{major}.{minor}"}
+    with open(file_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f)
+    print(f"Version updated to {major}.{minor}")
+
+
+def main():
+    # Retrieve labels from environment
+    labels = get_labels_from_env()
+    print(f"Labels: {labels}")
+
+    # Check if any of the required label combinations is present
+    if not has_label_combination(labels, REQUIRED_LABEL_COMBINATIONS):
         print("No matching label combinations found. Version not bumped.")
         sys.exit(0)
 
     # Read current version from version.yaml
     version_file = "version.yaml"
-    with open(version_file, "r") as f:
-        data = yaml.safe_load(f)
-
-    version_str = data.get("version", "0.0")
-    major, minor = map(int, version_str.split("."))
+    major, minor = read_version(version_file)
 
     # Determine version bump type
     if "prd" in labels:
@@ -54,15 +99,8 @@ def main():
         print("No matching labels for version bump.")
         sys.exit(0)
 
-    # Update version
-    new_version = f"{major}.{minor}"
-    data["version"] = new_version
-
-    # Write updated version back to version.yaml
-    with open(version_file, "w") as f:
-        yaml.dump(data, f)
-
-    print(f"Version updated to {new_version}")
+    # Write the updated version back
+    write_version(version_file, major, minor)
 
 
 if __name__ == "__main__":

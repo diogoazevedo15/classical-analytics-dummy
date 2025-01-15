@@ -31,7 +31,6 @@ jobs:
           if [ "$APPROVALS" -lt 1 ]; then
             echo "Not enough approvals"
             exit 1
-          fi
 
   deploy_with_version_bump:
     needs: [check-approvals]

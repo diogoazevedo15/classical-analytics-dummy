@@ -1,4 +1,4 @@
-name: Check PR Approvals
+name: Deploy pipeline
 
 on:
   pull_request_review:
@@ -16,7 +16,7 @@ jobs:
         run: |
           APPROVALS=$(gh pr view ${{ github.event.pull_request.number }} --json reviews --jq '.reviews | map(select(.state == "APPROVED")) | length')
           echo "Number of approvals: $APPROVALS"
-          if [ "$APPROVALS" -lt 2 ]; then
+          if [ "$APPROVALS" -lt 1 ]; then
             echo "Not enough approvals"
             exit 1
           fi

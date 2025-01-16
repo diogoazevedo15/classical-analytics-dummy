@@ -11,13 +11,14 @@ permissions:
 
 jobs:
   on_approve:
+    # Call the On Approve reusable workflow
     uses: ./.github/workflows/on-approve.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
   bump_version:
     needs: on_approve
-
+    # Call the Bump Versions reusable workflow
     uses: ./.github/workflows/bump-versions.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
@@ -28,5 +29,9 @@ jobs:
 
   deploy:
     needs: bump_version
-
     uses: ./.github/workflows/deploy-to-azure.yaml
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

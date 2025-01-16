@@ -1,0 +1,80 @@
+name: "Deploy to Azure"
+
+on:
+  workflow_call:
+
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP_DEV }}
+      AZURE_WORKSPACE_NAME: ${{ vars.AZURE_WORKSPACE_NAME_DEV }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Login to Azure via Service Principal
+        run: |
+          az login --service-principal \
+            --username $AZURE_CLIENT_ID \
+            --password $AZURE_CLIENT_SECRET \
+            --tenant $AZURE_TENANT_ID
+
+      - name: Install Azure ML CLI extension
+        run: az extension add -n ml --yes
+
+      - name: Configure Azure defaults
+        run: az configure --defaults group=$AZURE_RESOURCE_GROUP workspace=$AZURE_WORKSPACE_NAME subscription=$AZURE_SUBSCRIPTION_ID
+
+      - name: List component directory contents
+        run: ls -R src/train/components/
+
+      - name: Deploy environments and components
+        run: |
+          echo "Starting deployment for components under src/train/components/"
+          for component_dir in src/train/components/*/; do
+            # Extract the component name from the directory path.
+            component_name=$(basename "$component_dir")
+            echo "=================================================="
+            echo "==> Processing component: $component_name"
+            echo "=================================================="
+
+            # Deploy environment if env.yaml exists.
+            if [ -f "$component_dir/env.yaml" ]; then
+              echo "[${component_name}] -> Found env.yaml at: $component_dir/env.yaml"
+              echo "[${component_name}] Deploying environment..."
+              az ml environment create --file "$component_dir/env.yaml"
+              echo "[${component_name}] Environment deployment completed."
+            else
+              echo "[${component_name}] -> No env.yaml found."
+            fi
+
+            # Deploy component if config.yaml exists.
+            if [ -f "$component_dir/config.yaml" ]; then
+              echo "[${component_name}] -> Found config.yaml at: $component_dir/config.yaml"
+              echo "[${component_name}] Deploying component..."
+              az ml component create --file "$component_dir/config.yaml"
+              echo "[${component_name}] Component deployment completed."
+            else
+              echo "[${component_name}] -> No config.yaml found."
+            fi
+
+            echo ""  # Blank line for separation.
+          done
+
+      - name: Create or update pipeline
+        run: az ml component create --file src/train/pipeline.yaml

@@ -25,3 +25,4 @@ jobs:
       pr_labels: ${{ toJson(github.event.pull_request.labels) }}
       pr_title: ${{ github.event.pull_request.title }}
       base_ref: ${{ github.event.pull_request.base.ref }}
+      head_ref: ${{ github.event.pull_request.head.ref }}

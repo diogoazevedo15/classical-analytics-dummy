@@ -41,7 +41,8 @@ jobs:
       HEAD_REF: ${{ inputs.head_ref }}
 
     outputs:
-      old_version: ${{ steps.get_version.outputs.old_version }}
+      old_version: ${{ steps.get_old_version.outputs.old_version }}
+      new_version: ${{ steps.get_new_version.outputs.new_version }}
 
     steps:
       - name: Checkout repository
@@ -59,15 +60,26 @@ jobs:
         run: pip install pyyaml
 
       - name: Get old version
-        id: get_version
+        id: get_old_version
         run: |
           # Capture only the version number output from the script.
-          old_version=$(python .github/scripts/bump_versions.py get_version | tail -n 1)
+          old_version=$(python .github/scripts/bump_version.py get_version | tail -n 1)
           echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
 
       - name: Bump version
-        run: python .github/scripts/bump_versions.py bump
+        run: python .github/scripts/bump_version.py bump
+
+      - name: Get new version
+        id: get_new_version
+        run: |
+          # Capture only the version number output from the script.
+          new_version=$(python .github/scripts/bump_version.py get_version | tail -n 1)
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Bump Azure versions
+        run: python .github/scripts/set_azure_versions.py ${{ steps.get_new_version.outputs.new_version }}
 
       - name: Commit version bump
         run: |

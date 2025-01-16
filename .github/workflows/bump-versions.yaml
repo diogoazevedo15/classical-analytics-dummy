@@ -19,6 +19,10 @@ on:
         description: "The base ref of the PR."
         required: false
         type: string
+      head_ref:
+        description: "The head branch of the PR, where the changes should be committed."
+        required: true
+        type: string
 
 jobs:
   bump_versions:
@@ -30,13 +34,17 @@ jobs:
       PR_LABELS: ${{ inputs.pr_labels }}
       PR_TITLE: ${{ inputs.pr_title }}
       BASE_REF: ${{ inputs.base_ref }}
+      HEAD_REF: ${{ inputs.head_ref }}
 
     outputs:
       old_version: ${{ steps.get_version.outputs.old_version }}
 
     steps:
       - name: Checkout repository
+        # Checkout the head branch so that commits can be pushed.
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -49,10 +57,26 @@ jobs:
       - name: Get old version
         id: get_version
         run: |
-          # Here the script will have access to PR_NUMBER, PR_LABELS, etc. if needed.
-          old_version=$(python .github/scripts/bump_versions.py get_version)
+          # Capture only the version number output from the script.
+          old_version=$(python .github/scripts/bump_versions.py get_version | tail -n 1)
           echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
 
       - name: Bump version
         run: python .github/scripts/bump_versions.py bump
+
+      - name: Commit version bump
+        run: |
+          # Configure Git with a generic actions user.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage the version.yaml file (assuming that's where the version is stored).
+          git add version.yaml
+
+          # Commit the changes. If there are no changes, the commit command will fail,
+          # so we use "|| echo" to continue gracefully.
+          git commit -m "Bump version as per PR #${{ inputs.pull_request_number }}" || echo "No changes to commit"
+
+          # Push changes back to the PR branch.
+          git push origin ${{ inputs.head_ref }}

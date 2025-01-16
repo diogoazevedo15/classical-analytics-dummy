@@ -1,5 +1,9 @@
 name: "Bump Versions"
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   workflow_call:
     inputs:
@@ -7,17 +11,44 @@ on:
         description: "The number of the pull request (if you need it)."
         required: false
         type: number
+      pr_labels:
+        description: "The PR labels in JSON format."
+        required: false
+        type: string
+      pr_title:
+        description: "The PR title."
+        required: false
+        type: string
+      base_ref:
+        description: "The base ref of the PR."
+        required: false
+        type: string
+      head_ref:
+        description: "The head branch of the PR, where the changes should be committed."
+        required: true
+        type: string
 
 jobs:
   bump_versions:
     runs-on: ubuntu-latest
+
+    # Set environment variables using the inputs:
+    env:
+      PR_NUMBER: ${{ inputs.pull_request_number }}
+      PR_LABELS: ${{ inputs.pr_labels }}
+      PR_TITLE: ${{ inputs.pr_title }}
+      BASE_REF: ${{ inputs.base_ref }}
+      HEAD_REF: ${{ inputs.head_ref }}
 
     outputs:
       old_version: ${{ steps.get_version.outputs.old_version }}
 
     steps:
       - name: Checkout repository
+        # Checkout the head branch so that commits can be pushed.
         uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -25,16 +56,31 @@ jobs:
           python-version: "3.9"
 
       - name: Install Python dependencies
-        run: |
-          pip install pyyaml
+        run: pip install pyyaml
 
       - name: Get old version
         id: get_version
         run: |
-          old_version=$(python .github/scripts/bump_versions.py get_version)
+          # Capture only the version number output from the script.
+          old_version=$(python .github/scripts/bump_versions.py get_version | tail -n 1)
           echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
 
       - name: Bump version
+        run: python .github/scripts/bump_versions.py bump
+
+      - name: Commit version bump
         run: |
-          python .github/scripts/bump_versions.py bump
+          # Configure Git with a generic actions user.
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage the version.yaml file (assuming that's where the version is stored).
+          git add version.yaml
+
+          # Commit the changes. If there are no changes, the commit command will fail,
+          # so we use "|| echo" to continue gracefully.
+          git commit -m "Bump version as per PR #${{ inputs.pull_request_number }}" || echo "No changes to commit"
+
+          # Push changes back to the PR branch.
+          git push origin ${{ inputs.head_ref }}

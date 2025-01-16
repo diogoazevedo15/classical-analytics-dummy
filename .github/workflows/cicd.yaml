@@ -5,19 +5,24 @@ on:
     types: [submitted]
 
 permissions:
-  contents: read
-  pull-requests: read
+  contents: write
+  pull-requests: write
   checks: read
 
 jobs:
   on_approve:
-    # Instead of `runs-on: ubuntu-latest` and steps, we directly call the reusable workflow:
+    # Call the On Approve reusable workflow (assumed to be at .github/workflows/on-approve.yaml)
     uses: ./.github/workflows/on-approve.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
   bump_version:
     needs: on_approve
+    # Call the Bump Versions reusable workflow
     uses: ./.github/workflows/bump-versions.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
+      pr_labels: ${{ toJson(github.event.pull_request.labels) }}
+      pr_title: ${{ github.event.pull_request.title }}
+      base_ref: ${{ github.event.pull_request.base.ref }}
+      head_ref: ${{ github.event.pull_request.head.ref }}

@@ -1,9 +1,9 @@
 $schema: https://azuremlschemas.azureedge.net/latest/pipelineComponentBatchDeployment.schema.json
-name: train-pipeline-deployment
+name: inference_pipeline-deployment
 description: Deployment made trough gitactions
 endpoint_name: cv-endpoint
 type: pipeline
-component: azureml:cv_pipeline_updated@latest
+component: azureml:inference_pipeline@latest
 settings:
     continue_on_step_failure: false
     default_compute: cpu-cluster

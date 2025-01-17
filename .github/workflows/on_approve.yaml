@@ -1,0 +1,41 @@
+name: "On Approve"
+
+on:
+  workflow_call:
+    inputs:
+      pull_request_number:
+        description: "The pull request number"
+        required: true
+        type: number
+
+jobs:
+  check-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r .github/scripts/requirements.txt
+
+      - name: Check Approvals
+        id: check_approvals
+        run: |
+          python .github/scripts/on_approve/check_approvals.py \
+            --repo "${{ github.repository }}" \
+            --token "${{ secrets.GITHUB_TOKEN }}" \
+            --pr-number "${{ inputs.pull_request_number }}"
+
+      - name: Check Required Checks
+        id: check_checks
+        run: |
+          python .github/scripts/on_approve/check_required_checks.py \
+            --repo "${{ github.repository }}" \
+            --token "${{ secrets.GITHUB_TOKEN }}" \
+            --pr-number "${{ inputs.pull_request_number }}"

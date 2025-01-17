@@ -1,0 +1,29 @@
+$schema: https://azuremlschemas.azureedge.net/latest/PipelineComponent.schema.json
+type: pipeline
+name: inference_pipeline
+display_name: inference_pipeline
+version: '5.13'
+inputs:
+  input_url:
+    type: uri_folder
+    description: Input data url where the data will be downloaded from.
+outputs:
+  process_data_output:
+    type: uri_folder
+  train_output_url:
+    type: uri_folder
+jobs:
+  process_data:
+    type: command
+    component: azureml:process_data@latest
+    inputs:
+      input_url: ${{ parent.inputs.input_url }}
+    outputs:
+      output_url: ${{ parent.outputs.process_data_output }}
+  train_model:
+    type: command
+    component: azureml:train_model@latest
+    inputs:
+      input_url: ${{ parent.jobs.process_data.outputs.output_url }}
+    outputs:
+      output_url: ${{ parent.outputs.train_output_url }}

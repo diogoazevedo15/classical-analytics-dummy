@@ -27,13 +27,6 @@ jobs:
       base_ref: ${{ github.event.pull_request.base.ref }}
       head_ref: ${{ github.event.pull_request.head.ref }}
 
-  save_versions:
-    name: "Save Versions"
-    needs: bump_version
-    run: |
-      echo "OLD_VERSION=${{ needs.bump_version.outputs.old_version }}" >> $GITHUB_ENV
-      echo "NEW_VERSION=${{ needs.bump_version.outputs.new_version }}" >> $GITHUB_ENV
-
   push_to_azure:
     name: "Push to Azure"
     needs: bump_version
@@ -46,10 +39,11 @@ jobs:
 
   roll_back_version:
     name: "Roll Back Version if pipeline Fails"
-    needs: push_to_azure
+    needs:
+      - push_to_azure
+      - bump_version
     uses: ./.github/workflows/rollback_version.yaml
     if: ${{ failure() }}
     with:
-      old_version: ${{ OLD_VERSION }}
+      old_version: ${{ needs.bump_version.outputs.old_version }}
       head_ref: ${{ github.event.pull_request.head.ref }}
-    # You can pass additional info if needed, like reason, new_version, etc.

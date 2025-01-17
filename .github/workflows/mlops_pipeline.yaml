@@ -1,4 +1,4 @@
-name: "CICD Pipeline"
+name: "MLOps Pipeline"
 
 on:
   pull_request_review:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   on_approve:
-    uses: ./.github/workflows/on-approve.yaml
+    uses: ./.github/workflows/on_approve.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
@@ -27,7 +27,7 @@ jobs:
 
   deploy:
     needs: bump_version
-    uses: ./.github/workflows/deploy-to-azure.yaml
+    uses: ./.github/workflows/push_to_azure.yaml
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}

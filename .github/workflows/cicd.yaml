@@ -17,7 +17,7 @@ jobs:
 
   bump_version:
     needs: on_approve
-    uses: ./.github/workflows/bump-version.yaml
+    uses: ./.github/workflows/bump_version.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
       pr_labels: ${{ toJson(github.event.pull_request.labels) }}

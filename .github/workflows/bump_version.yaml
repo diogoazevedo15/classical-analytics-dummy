@@ -28,9 +28,21 @@ on:
         required: true
         type: string
 
+outputs:
+  old_version:
+    description: "The old version before bumping."
+    value: ${{ jobs.bump_version.outputs.old_version }}
+  new_version:
+    description: "The new version after bumping."
+    value: ${{ jobs.bump_version.outputs.new_version }}**
+
 jobs:
   bump_version:
     runs-on: ubuntu-latest
+
+    outputs:
+      old_version: ${{ steps.get_old_version.outputs.old_version }}
+      new_version: ${{ steps.get_new_version.outputs.new_version }}**
 
     env:
       PR_NUMBER: ${{ inputs.pull_request_number }}
@@ -38,10 +50,6 @@ jobs:
       PR_TITLE: ${{ inputs.pr_title }}
       BASE_REF: ${{ inputs.base_ref }}
       HEAD_REF: ${{ inputs.head_ref }}
-
-    outputs:
-      old_version: ${{ steps.get_old_version.outputs.old_version }}
-      new_version: ${{ steps.get_new_version.outputs.new_version }}
 
     steps:
       - name: "Checkout repository"

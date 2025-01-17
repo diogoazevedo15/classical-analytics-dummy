@@ -12,37 +12,30 @@ jobs:
   check-approvals:
     runs-on: ubuntu-latest
     steps:
-      # 1) Checkout the code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2) Setup Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
-      # 3) Install dependencies (requests, etc.)
       - name: Install Python dependencies
         run: |
-          pip install -r action_requirements.txt
+          pip install -r .github/scripts/requirements.txt
 
-      # 4) Check approvals using a Python script
       - name: Check Approvals
         id: check_approvals
         run: |
-          echo "=== Running Check Approvals Python script ==="
-          python scripts/check_approvals.py \
+          python .github/scripts/on_approve/check_approvals.py \
             --repo "${{ github.repository }}" \
             --token "${{ secrets.GITHUB_TOKEN }}" \
             --pr-number "${{ inputs.pull_request_number }}"
 
-      # 5) Check required checks status using a Python script
       - name: Check Required Checks
         id: check_checks
         run: |
-          echo "=== Running Check Required Checks Python script ==="
-          python scripts/check_required_checks.py \
+          python .github/scripts/on_approve/check_required_checks.py \
             --repo "${{ github.repository }}" \
             --token "${{ secrets.GITHUB_TOKEN }}" \
             --pr-number "${{ inputs.pull_request_number }}"

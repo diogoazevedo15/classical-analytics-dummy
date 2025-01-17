@@ -1,0 +1,63 @@
+name: "Roll Back Version"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  workflow_call:
+    inputs:
+      old_version:
+        description: "The old version string (major.minor) to revert to."
+        required: true
+        type: string
+      head_ref:
+        description: "The PR branch (head) to which we commit the rollback."
+        required: true
+        type: string
+      # (Optional) If you want a reason field, pass it here:
+      reason:
+        description: "Reason for rollback."
+        required: false
+        type: string
+
+jobs:
+  revert_version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.head_ref }}
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: "Install Dependencies"
+        run: |
+          pip install pyyaml
+
+      - name: "Rollback Global Version"
+        run: |
+          echo "=== [INFO] Rolling back global version to ${{ inputs.old_version }} ==="
+          python .github/scripts/rollback_version/rollback_global_version.py ${{ inputs.old_version }}
+
+      - name: "Rollback Azure Versions"
+        run: |
+          echo "=== [INFO] Rolling back Azure YAML versions to ${{ inputs.old_version }} ==="
+          python .github/scripts/rollback_version/rollback_azure_versions.py ${{ inputs.old_version }}
+
+      - name: "Commit rollback changes"
+        run: |
+          echo "=== [INFO] Committing rollback to branch: ${{ inputs.head_ref }} ==="
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage all changed files (version.yaml, plus any updated YAMLs under src/*).
+          git add version.yaml src/train/ src/inference/
+
+          git commit -m "Revert version to ${{ inputs.old_version }} (Rollback). Reason: ${{ inputs.reason || 'Unknown' }}" || echo "[INFO] No changes to commit."
+          git push origin ${{ inputs.head_ref }}

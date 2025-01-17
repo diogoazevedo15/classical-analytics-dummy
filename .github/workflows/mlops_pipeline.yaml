@@ -39,9 +39,8 @@ jobs:
 
   roll_back_version:
     name: "Roll Back Version if pipeline Fails"
-    needs: deploy
+    needs: push_to_azure
     uses: ./.github/workflows/rollback_version.yaml
-    # Only run if the deploy job failed
     if: ${{ failure() }}
     with:
       old_version: ${{ needs.bump_version.outputs.old_version }}

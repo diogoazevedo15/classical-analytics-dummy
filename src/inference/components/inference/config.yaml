@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
-name: process_data
-display_name: process_data
+name: inference
+display_name: inference
 version: '5.12'
 type: command
 inputs:

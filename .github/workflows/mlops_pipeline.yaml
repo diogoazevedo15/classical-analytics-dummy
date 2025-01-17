@@ -43,6 +43,6 @@ jobs:
     uses: ./.github/workflows/rollback_version.yaml
     if: ${{ failure() }}
     with:
-      old_version: ${{ needs.bump_version.outputs.old_version }}
+      old_version: ${{ jobs.bump_version.outputs.old_version }}
       head_ref: ${{ github.event.pull_request.head.ref }}
     # You can pass additional info if needed, like reason, new_version, etc.

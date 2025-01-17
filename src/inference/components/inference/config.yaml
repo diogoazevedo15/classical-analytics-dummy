@@ -1,0 +1,14 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: process_data
+display_name: process_data
+version: '4.0'
+type: command
+inputs:
+  input_url:
+    type: uri_folder
+outputs:
+  output_url:
+    type: uri_folder
+code: code.py
+environment: azureml:env-process-data@latest
+command: 'python code.py'

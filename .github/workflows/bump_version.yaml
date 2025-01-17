@@ -70,20 +70,20 @@ jobs:
       - name: "Bump version"
         run: |
           echo "=== [INFO] Bumping global version (if applicable) based on PR labels ==="
-          python .github/scripts/bump_versions/manage_global_version.py bump
+          python .github/scripts/bump_version/manage_global_version.py bump
 
       - name: "Get new version"
         id: get_new_version
         run: |
           echo "=== [INFO] Retrieving new global version ==="
-          new_version=$(python .github/scripts/bump_versions/manage_global_version.py get_version | tail -n 1)
+          new_version=$(python .github/scripts/bump_version/manage_global_version.py get_version | tail -n 1)
           echo "New version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
       - name: "Bump Azure versions"
         run: |
           echo "=== [INFO] Updating Azure pipeline/component/environment YAMLs with new version ==="
-          python .github/scripts/bump_versions/manage_azure_versions.py ${{ steps.get_new_version.outputs.new_version }}
+          python .github/scripts/bump_version/manage_azure_versions.py ${{ steps.get_new_version.outputs.new_version }}
 
       - name: "Commit version bump"
         run: |

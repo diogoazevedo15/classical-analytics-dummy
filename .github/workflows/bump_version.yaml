@@ -28,6 +28,14 @@ on:
         required: true
         type: string
 
+    outputs:
+      old_version:
+        description: "The old version from the job"
+        value: ${{ jobs.bump_version.outputs.old_version }}
+      new_version:
+        description: "The new version from the job"
+        value: ${{ jobs.bump_version.outputs.new_version }}
+
 jobs:
   bump_version:
     runs-on: ubuntu-latest

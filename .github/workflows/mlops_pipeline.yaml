@@ -10,12 +10,12 @@ permissions:
   checks: read
 
 jobs:
-  on_approve:
+  On Approve:
     uses: ./.github/workflows/on_approve.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
-  bump_version:
+  Bump Version:
     needs: on_approve
     uses: ./.github/workflows/bump_version.yaml
     with:
@@ -25,7 +25,7 @@ jobs:
       base_ref: ${{ github.event.pull_request.base.ref }}
       head_ref: ${{ github.event.pull_request.head.ref }}
 
-  deploy:
+  Push to Azure:
     needs: bump_version
     uses: ./.github/workflows/push_to_azure.yaml
     secrets:
@@ -34,7 +34,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-  roll_back_version:
+  Rollback Version:
     name: "Roll Back Version if Deploy Fails"
     needs: deploy
     uses: ./.github/workflows/rollback_version.yaml

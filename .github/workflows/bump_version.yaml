@@ -62,10 +62,9 @@ jobs:
       - name: "Get old version"
         id: get_old_version
         run: |
-          echo "=== [INFO] Retrieving current global version from version.yaml ==="
           old_version=$(python .github/scripts/bump_version/manage_global_version.py get_version | tail -n 1)
-          echo "Current version: $old_version"
           echo "old_version=$old_version" >> $GITHUB_OUTPUT
+          echo "Current version: $old_version"
 
       - name: "Bump version"
         run: |
@@ -75,10 +74,10 @@ jobs:
       - name: "Get new version"
         id: get_new_version
         run: |
-          echo "=== [INFO] Retrieving new global version ==="
           new_version=$(python .github/scripts/bump_version/manage_global_version.py get_version | tail -n 1)
-          echo "New version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "New version: $new_version"
+
 
       - name: "Bump Azure versions"
         run: |

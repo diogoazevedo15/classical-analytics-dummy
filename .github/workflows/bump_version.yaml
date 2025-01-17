@@ -29,7 +29,7 @@ on:
         type: string
 
 jobs:
-  bump_versions:
+  bump_version:
     runs-on: ubuntu-latest
 
     env:

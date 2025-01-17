@@ -45,5 +45,4 @@ jobs:
     with:
       old_version: ${{ needs.bump_version.outputs.old_version }}
       head_ref: ${{ github.event.pull_request.head.ref }}
-      new_version: ${{ needs.bump_version.outputs.new_version }}
     # You can pass additional info if needed, like reason, new_version, etc.

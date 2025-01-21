@@ -5,47 +5,20 @@ permissions:
   pull-requests: write
 
 on:
-  workflow_call:
-    inputs:
-      pull_request_number:
-        description: "The number of the pull request (if you need it)."
-        required: false
-        type: number
-      pr_labels:
-        description: "The PR labels in JSON format."
-        required: false
-        type: string
-      pr_title:
-        description: "The PR title."
-        required: false
-        type: string
-      base_ref:
-        description: "The base ref of the PR."
-        required: false
-        type: string
-      head_ref:
-        description: "The head branch of the PR, where the changes should be committed."
-        required: true
-        type: string
-
-    outputs:
-      old_version:
-        description: "The old version from the job"
-        value: ${{ jobs.bump_version.outputs.old_version }}
-      new_version:
-        description: "The new version from the job"
-        value: ${{ jobs.bump_version.outputs.new_version }}
+  pull_request:
+    types: [opened]
 
 jobs:
   bump_version:
     runs-on: ubuntu-latest
 
     env:
-      PR_NUMBER: ${{ inputs.pull_request_number }}
-      PR_LABELS: ${{ inputs.pr_labels }}
-      PR_TITLE: ${{ inputs.pr_title }}
-      BASE_REF: ${{ inputs.base_ref }}
-      HEAD_REF: ${{ inputs.head_ref }}
+      # Extract values from the pull request event payload:
+      PR_NUMBER: ${{ github.event.number }}
+      PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
     outputs:
       old_version: ${{ steps.get_old_version.outputs.old_version }}
@@ -98,7 +71,7 @@ jobs:
           echo "=== [INFO] Committing any version.yaml changes back to branch $HEAD_REF ==="
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
+          git add version.yaml src/train/ src/inference/
 
           # If nothing changed, the commit will fail. Let's ignore that failure gracefully.
           git commit -m "Bump version to ${{ steps.get_new_version.outputs.new_version }} [PR #${{ env.PR_NUMBER }}]" || echo "No changes to commit"

@@ -3,7 +3,7 @@ name: "Checks"
 on:
   pull_request:
     branches: [dev, main]
-    types: [opened, reopened, synchronize]
+    types: [synchronize]
 
 jobs:
   # 1) Lint Job

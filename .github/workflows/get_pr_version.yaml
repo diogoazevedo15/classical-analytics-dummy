@@ -1,0 +1,34 @@
+name: "Get PR Version"
+on:
+  workflow_call:
+    inputs:
+      pull_request_number:
+        type: number
+        required: false
+    outputs:
+      pr_version:
+        description: "The version from version.yaml"
+        value: ${{ jobs.get.outputs.pr_version }}
+
+jobs:
+  get:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_version: ${{ steps.extract_version.outputs.pr_version }}
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: "Install Dependencies"
+        run: pip install pyyaml
+
+      - name: "Retrieve version"
+        id: extract_version
+        run: |
+          version=$(python .github/scripts/bump_version/manage_global_version.py get_version | tail -n 1)
+          echo "pr_version=$version" >> $GITHUB_OUTPUT

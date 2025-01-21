@@ -51,7 +51,7 @@ jobs:
     name: "Merge PR"
     needs:
       - tag_version
-    if: ${{ needs.tag_version.result == 'success' }}
+    if: ${{ always() && needs.tag_version.result == 'success' }}
     uses: ./.github/workflows/merge_pr.yaml
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

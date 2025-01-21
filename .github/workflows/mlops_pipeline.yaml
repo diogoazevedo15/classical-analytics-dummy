@@ -44,15 +44,14 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
     with:
-      # Wrap the concat expression in quotes so YAML handles it as a string
-      pr_version: "${{ concat(needs.get_pr_version.outputs.pr_version, (needs.push_to_azure_dev.result == 'failure' ? '-broken' : '')) }}"
+      pr_version: "${{ format('{0}{1}', needs.get_pr_version.outputs.pr_version, (needs.push_to_azure_dev.result == 'failure' && '-broken' || '')) }}"
       head_ref: ${{ github.event.pull_request.head.ref }}
 
   merge_pr:
     name: "Merge PR"
     needs:
       - tag_version
-    if: ${{ success() }}
+    if: ${{ needs.tag_version.result == 'success' }}
     uses: ./.github/workflows/merge_pr.yaml
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

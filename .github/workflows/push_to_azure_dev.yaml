@@ -21,12 +21,14 @@ jobs:
     name: "Push to Azure"
     runs-on: ubuntu-latest
     env:
-      # Azure Service Principal credentials and defaults
+      # Azure Service Principal credentials
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      # Default resource group and workspace (can be overridden in calling workflow or repo settings)
+
+      # Default resource group and workspace
+      # (Can be overridden in the calling workflow or repo settings)
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP_DEV }}
       AZURE_WORKSPACE_NAME: ${{ vars.AZURE_WORKSPACE_NAME_DEV }}
 
@@ -55,14 +57,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== Installing the Azure ML extension ==="
-          az extension add -n ml --yes
+          echo "=== Installing the Azure ML CLI extension ==="
+          az extension add --name ml --yes
 
       - name: "[INFO] Configure Azure defaults"
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== Configuring default subscription, resource group, and workspace ==="
+          echo "=== Setting default subscription, resource group, and workspace ==="
           az configure --defaults group="$AZURE_RESOURCE_GROUP" workspace="$AZURE_WORKSPACE_NAME" subscription="$AZURE_SUBSCRIPTION_ID"
 
       # ==================================================
@@ -72,47 +74,65 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== [TRAIN] Scanning for environment and component YAML files in 'src/train/components/' ==="
+          echo ""
+          echo "#################################################################"
+          echo "### [TRAIN] Deploying Environments & Components               ###"
+          echo "#################################################################"
+          echo ""
+
           for component_dir in src/train/components/*/; do
+            # Skip if not a directory
             if [ ! -d "$component_dir" ]; then
               continue
             fi
+
             component_name=$(basename "$component_dir")
+
             echo "--------------------------------------------------"
-            echo "[TRAIN][INFO] Processing component: ${component_name} in ${component_dir}"
+            echo "[TRAIN] Currently in directory: $component_dir"
+            echo "[TRAIN] Component name: $component_name"
             echo "--------------------------------------------------"
 
-            # Deploy environment if env.yaml is found
+            # Deploy environment if found
             if [ -f "$component_dir/env.yaml" ]; then
-              echo "[TRAIN][${component_name}] Found 'env.yaml' -> Deploying environment..."
+              echo "[TRAIN] Deploying environment from: $component_dir/env.yaml"
               az ml environment create --file "$component_dir/env.yaml"
-              echo "[TRAIN][${component_name}] Environment deployment completed."
+              echo "[TRAIN] Environment deployment completed."
             else
-              echo "[TRAIN][${component_name}] No 'env.yaml' found, skipping environment deployment."
+              echo "[TRAIN] No env.yaml found in $component_dir. Skipping environment."
             fi
 
-            # Deploy component if config.yaml is found
+            # Deploy component if found
             if [ -f "$component_dir/config.yaml" ]; then
-              echo "[TRAIN][${component_name}] Found 'config.yaml' -> Deploying component..."
+              echo "[TRAIN] Deploying component from: $component_dir/config.yaml"
               az ml component create --file "$component_dir/config.yaml"
-              echo "[TRAIN][${component_name}] Component deployment completed."
+              echo "[TRAIN] Component deployment completed."
             else
-              echo "[TRAIN][${component_name}] No 'config.yaml' found, skipping component deployment."
+              echo "[TRAIN] No config.yaml found in $component_dir. Skipping component."
             fi
 
             echo ""
           done
 
       - name: "[TRAIN] Create or Update Pipeline"
-        if: ${{ always() }}  # Evaluate even if prior steps in this job succeed, but any failure above will abort the job.
+        if: ${{ always() }}  # Will still require success in prior steps to continue
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f "src/train/pipeline.yaml" ]; then
-            echo "=== [TRAIN] Deploying pipeline from 'src/train/pipeline.yaml' ==="
-            az ml component create --file src/train/pipeline.yaml
+          TRAIN_PIPELINE="src/train/pipeline.yaml"
+          echo ""
+          echo "#################################################################"
+          echo "### [TRAIN] Checking for pipeline file                        ###"
+          echo "#################################################################"
+          echo ""
+
+          if [ -f "$TRAIN_PIPELINE" ]; then
+            echo "[TRAIN] Found pipeline file: $TRAIN_PIPELINE"
+            echo "[TRAIN] Deploying pipeline..."
+            az ml component create --file "$TRAIN_PIPELINE"
+            echo "[TRAIN] Pipeline deployment completed."
           else
-            echo "=== [TRAIN] No 'pipeline.yaml' found in 'src/train/' ==="
+            echo "[TRAIN] No pipeline.yaml found in 'src/train/' - Skipping."
           fi
 
       # ==================================================
@@ -122,32 +142,41 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== [INFERENCE] Scanning for environment and component YAML files in 'src/inference/components/' ==="
+          echo ""
+          echo "#################################################################"
+          echo "### [INFERENCE] Deploying Environments & Components           ###"
+          echo "#################################################################"
+          echo ""
+
           for component_dir in src/inference/components/*/; do
+            # Skip if not a directory
             if [ ! -d "$component_dir" ]; then
               continue
             fi
+
             component_name=$(basename "$component_dir")
+
             echo "--------------------------------------------------"
-            echo "[INFERENCE][INFO] Processing component: ${component_name} in ${component_dir}"
+            echo "[INFERENCE] Currently in directory: $component_dir"
+            echo "[INFERENCE] Component name: $component_name"
             echo "--------------------------------------------------"
 
-            # Deploy environment if env.yaml is found
+            # Deploy environment if found
             if [ -f "$component_dir/env.yaml" ]; then
-              echo "[INFERENCE][${component_name}] Found 'env.yaml' -> Deploying environment..."
+              echo "[INFERENCE] Deploying environment from: $component_dir/env.yaml"
               az ml environment create --file "$component_dir/env.yaml"
-              echo "[INFERENCE][${component_name}] Environment deployment completed."
+              echo "[INFERENCE] Environment deployment completed."
             else
-              echo "[INFERENCE][${component_name}] No 'env.yaml' found, skipping environment deployment."
+              echo "[INFERENCE] No env.yaml found in $component_dir. Skipping environment."
             fi
 
-            # Deploy component if config.yaml is found
+            # Deploy component if found
             if [ -f "$component_dir/config.yaml" ]; then
-              echo "[INFERENCE][${component_name}] Found 'config.yaml' -> Deploying component..."
+              echo "[INFERENCE] Deploying component from: $component_dir/config.yaml"
               az ml component create --file "$component_dir/config.yaml"
-              echo "[INFERENCE][${component_name}] Component deployment completed."
+              echo "[INFERENCE] Component deployment completed."
             else
-              echo "[INFERENCE][${component_name}] No 'config.yaml' found, skipping component deployment."
+              echo "[INFERENCE] No config.yaml found in $component_dir. Skipping component."
             fi
 
             echo ""
@@ -157,9 +186,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f "src/inference/pipeline.yaml" ]; then
-            echo "=== [INFERENCE] Deploying pipeline from 'src/inference/pipeline.yaml' ==="
-            az ml component create --file src/inference/pipeline.yaml
+          INFERENCE_PIPELINE="src/inference/pipeline.yaml"
+          echo ""
+          echo "#################################################################"
+          echo "### [INFERENCE] Checking for pipeline file                    ###"
+          echo "#################################################################"
+          echo ""
+
+          if [ -f "$INFERENCE_PIPELINE" ]; then
+            echo "[INFERENCE] Found pipeline file: $INFERENCE_PIPELINE"
+            echo "[INFERENCE] Deploying pipeline..."
+            az ml component create --file "$INFERENCE_PIPELINE"
+            echo "[INFERENCE] Pipeline deployment completed."
           else
-            echo "=== [INFERENCE] No 'pipeline.yaml' found in 'src/inference/' ==="
+            echo "[INFERENCE] No pipeline.yaml found in 'src/inference/' - Skipping."
           fi

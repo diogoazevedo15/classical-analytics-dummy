@@ -2,11 +2,7 @@ name: "Checks"
 
 on:
   pull_request:
-    types: [synchronize]
-  workflow_run:
-    workflows: ["Bump Versions"]
-    types:
-      - completed
+    types: [open, synchronize]
 
 jobs:
   # 1) Lint Job

@@ -57,7 +57,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Stage all changed files (version.yaml, plus any updated YAMLs under src/*).
-          git add .
+          git add version.yaml src/train/ src/inference/
 
           git commit -m "Revert version to ${{ inputs.old_version }} (Rollback). Reason: ${{ inputs.reason || 'Unknown' }}" || echo "[INFO] No changes to commit."
           git push origin ${{ inputs.head_ref }}

@@ -16,21 +16,17 @@ jobs:
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
-  # bump_version:
-  #   name: "Bump Version"
-  #   needs: on_approve
-  #   uses: ./.github/workflows/bump_version.yaml
-  #   with:
-  #     pull_request_number: ${{ github.event.pull_request.number }}
-  #     pr_labels: ${{ toJson(github.event.pull_request.labels) }}
-  #     pr_title: ${{ github.event.pull_request.title }}
-  #     base_ref: ${{ github.event.pull_request.base.ref }}
-  #     head_ref: ${{ github.event.pull_request.head.ref }}
+  get_pr_version:
+    name: "Get PR Version"
+    needs: on_approve
+    uses: ./.github/workflows/get_pr_version.yaml
+    with:
+      pull_request_number: ${{ github.event.pull_request.number }}
 
-  push_to_azure:
-    name: "Push to Azure"
-    needs: bump_version
-    uses: ./.github/workflows/push_to_azure.yaml
+  push_to_azure_dev:
+    name: "Push to Azure Dev"
+    needs: get_pr_version
+    uses: ./.github/workflows/push_to_azure_dev.yaml
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -40,65 +36,25 @@ jobs:
   tag_version:
     name: "Tag Version"
     needs:
-      - push_to_azure
-      - bump_version
-    if: ${{ success() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: "[INFO] Checkout PR branch (HEAD)"
-        uses: actions/checkout@v3
-        with:
-          # This ensures we check out the same branch used by the PR
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: "[INFO] Create & Push Git Tag"
-        run: |
-          echo "=== [INFO] Creating tag for version: v${{ needs.bump_version.outputs.new_version }} ==="
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Ensure we have the entire commit history
-          git fetch --prune --unshallow || true
-
-          # Create an annotated tag "vX.Y"
-          git tag -a "v${{ needs.bump_version.outputs.new_version }}" -m "Tagging version v${{ needs.bump_version.outputs.new_version }}"
-
-          # Push the tag
-          git push origin "v${{ needs.bump_version.outputs.new_version }}"
+      - push_to_azure_dev
+      - get_pr_version
+    # Use "if: always()" so this job runs regardless of push_to_azure_dev’s result.
+    if: always()
+    uses: ./.github/workflows/tag_version.yaml
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      # Wrap the concat expression in quotes so YAML handles it as a string
+      pr_version: "${{ concat(needs.get_pr_version.outputs.pr_version, (needs.push_to_azure_dev.result == 'failure' ? '-broken' : '')) }}"
+      head_ref: ${{ github.event.pull_request.head.ref }}
 
   merge_pr:
     name: "Merge PR"
     needs:
       - tag_version
-    if: ${{ success() }}  # Only merge if everything else succeeded
-    runs-on: ubuntu-latest
-    steps:
-      # We don't actually need to checkout the repo just to merge the PR
-      # We can merge directly via GitHub Script with the PR number from the event:
-      - name: "Merge the PR"
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            console.log(`Merging PR #${prNumber}...`);
-            await github.rest.pulls.merge({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              merge_method: "merge",  // or 'squash' or 'rebase'
-            });
-
-  # roll_back_version:
-  #   name: "Roll Back Version if pipeline Fails"
-  #   needs:
-  #     - push_to_azure
-  #     - bump_version
-  #     - tag_version
-  #     - merge_pr
-  #   uses: ./.github/workflows/rollback_version.yaml
-  #   if: ${{ failure() }}
-  #   with:
-  #     old_version: ${{ needs.bump_version.outputs.old_version }}
-  #     head_ref: ${{ github.event.pull_request.head.ref }}
+    if: ${{ success() }}
+    uses: ./.github/workflows/merge_pr.yaml
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      pr_number: ${{ github.event.pull_request.number }}

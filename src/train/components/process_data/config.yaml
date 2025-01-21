@@ -1,11 +1,11 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: process_data
 display_name: process_data
-version: '5.13'
+version: '5.16'
 type: command
 inputs:
   input_url:
-    type: uri_folder
+    type: uri_fold
 outputs:
   output_url:
     type: uri_folder

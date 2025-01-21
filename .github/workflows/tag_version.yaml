@@ -1,0 +1,41 @@
+name: "Tag Version"
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+    inputs:
+      pr_version:
+        type: string
+        required: true
+        description: "The version to tag"
+      head_ref:
+        type: string
+        required: true
+        description: "The head branch to check out"
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout PR branch"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.head_ref }}
+          # Use the token from secrets for authenticated fetch/push
+          token: ${{ secrets.token }}
+
+      - name: "Create & Push Git Tag"
+        run: |
+          VERSION=${{ inputs.pr_version }}
+          echo "=== [INFO] Creating tag for version: v${VERSION} ==="
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Ensure full commit history for tagging
+          git fetch --prune --unshallow || true
+
+          git tag -a "v${VERSION}" -m "Tagging version v${VERSION}"
+          git push origin "v${VERSION}"

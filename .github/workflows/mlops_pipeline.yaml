@@ -22,6 +22,7 @@ jobs:
     uses: ./.github/workflows/get_pr_version.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
+    # No job-level outputs block here
 
   push_to_azure:
     name: "Push to Azure"
@@ -40,11 +41,12 @@ jobs:
       - get_pr_version
     if: ${{ success() }}
     uses: ./.github/workflows/tag_version.yaml
+    # Pass the actual secret token here
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
     with:
-      # reference the output from the child `get_pr_version` workflow
       pr_version: ${{ needs.get_pr_version.outputs.pr_version }}
       head_ref: ${{ github.event.pull_request.head.ref }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}
 
   merge_pr:
     name: "Merge PR"
@@ -52,6 +54,8 @@ jobs:
       - tag_version
     if: ${{ success() }}
     uses: ./.github/workflows/merge_pr.yaml
+    # Pass the actual secret token here
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
     with:
       pr_number: ${{ github.event.pull_request.number }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}

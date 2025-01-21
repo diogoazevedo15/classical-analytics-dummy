@@ -2,13 +2,13 @@ name: "Merge PR"
 
 on:
   workflow_call:
+    secrets:
+      token:
+        required: true
     inputs:
       pr_number:
         type: number
         required: true
-      github_token:
-        type: string
-        required: true  # <-- Accept it as a normal string input
 
 jobs:
   merge:
@@ -17,8 +17,7 @@ jobs:
       - name: "Merge the PR"
         uses: actions/github-script@v6
         with:
-          # Supply the input token here:
-          github-token: ${{ inputs.github_token }}
+          github-token: ${{ secrets.token }}
           script: |
             const prNumber = parseInt("${{ inputs.pr_number }}", 10);
             console.log(`Merging PR #${prNumber}...`);
@@ -26,5 +25,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
-              merge_method: "merge"
+              merge_method: "merge" // or "squash"/"rebase"
             });

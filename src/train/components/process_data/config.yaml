@@ -5,7 +5,7 @@ version: '5.14'
 type: command
 inputs:
   input_url:
-    type: uri_folder
+    type: uri_fold # Error on purpous
 outputs:
   output_url:
     type: uri_folder

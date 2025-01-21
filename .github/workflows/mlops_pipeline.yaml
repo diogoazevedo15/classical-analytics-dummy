@@ -45,8 +45,7 @@ jobs:
     with:
       pr_version: ${{ needs.get_pr_version.outputs.pr_version }}
       head_ref: ${{ github.event.pull_request.head.ref }}
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}
 
   merge_pr:
     name: "Merge PR"
@@ -56,5 +55,4 @@ jobs:
     uses: ./.github/workflows/merge_pr.yaml
     with:
       pr_number: ${{ github.event.pull_request.number }}
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}

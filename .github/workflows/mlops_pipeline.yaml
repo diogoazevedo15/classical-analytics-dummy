@@ -38,14 +38,12 @@ jobs:
     needs:
       - push_to_azure_dev
       - get_pr_version
-    # Use "if: always()" so this job runs regardless of push_to_azure_dev’s result.
-    if: always()
+    if: always()  # Run regardless of push_to_azure_dev’s result.
     uses: ./.github/workflows/tag_version.yaml
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
     with:
-      # Wrap the concat expression in quotes so YAML handles it as a string
-      pr_version: "${{ concat(needs.get_pr_version.outputs.pr_version, (needs.push_to_azure_dev.result == 'failure' ? '-broken' : '')) }}"
+      pr_version: "${{ format('{0}{1}', needs.get_pr_version.outputs.pr_version, (needs.push_to_azure_dev.result == 'failure' ? '-broken' : '')) }}"
       head_ref: ${{ github.event.pull_request.head.ref }}
 
   merge_pr:

@@ -1,0 +1,42 @@
+name: "Tag Version"
+
+on:
+  workflow_call:
+    inputs:
+      pr_version:
+        type: string
+        required: true
+        description: "The version to tag"
+      head_ref:
+        type: string
+        required: true
+        description: "The head branch of the PR to check out"
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "[INFO] Checkout PR branch (HEAD)"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.head_ref }}
+
+      - name: "[INFO] Create & Push Git Tag"
+        run: |
+          VERSION=${{ inputs.pr_version }}
+          echo "=== [INFO] Creating tag for version: v${VERSION} ==="
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Ensure we have the entire commit history (in case of shallow clone)
+          git fetch --prune --unshallow || true
+
+          # Create an annotated tag, e.g., "vX.Y"
+          git tag -a "v${VERSION}" -m "Tagging version v${VERSION}"
+
+          # Push the tag
+          git push origin "v${VERSION}"

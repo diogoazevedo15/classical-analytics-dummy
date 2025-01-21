@@ -22,7 +22,6 @@ jobs:
     uses: ./.github/workflows/get_pr_version.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
-    # ❌ Remove the old 'outputs:' block
 
   push_to_azure:
     name: "Push to Azure"

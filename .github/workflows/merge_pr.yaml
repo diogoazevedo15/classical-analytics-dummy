@@ -6,11 +6,9 @@ on:
       pr_number:
         type: number
         required: true
-        description: "The pull request number to merge"
       github_token:
         type: string
-        required: true
-        description: "GitHub token to authenticate"
+        required: true  # <-- Accept it as a normal string input
 
 jobs:
   merge:
@@ -19,6 +17,7 @@ jobs:
       - name: "Merge the PR"
         uses: actions/github-script@v6
         with:
+          # Supply the input token here:
           github-token: ${{ inputs.github_token }}
           script: |
             const prNumber = parseInt("${{ inputs.pr_number }}", 10);
@@ -27,5 +26,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber,
-              merge_method: "merge"  // or "squash"/"rebase"
+              merge_method: "merge"
             });

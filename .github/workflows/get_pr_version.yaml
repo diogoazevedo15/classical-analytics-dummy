@@ -1,29 +1,22 @@
 name: "Get PR Version"
-
 on:
   workflow_call:
     inputs:
-      # If you need the PR number or other inputs, you can add them here.
-      # Usually, you might only rely on repository context if the script is generic.
       pull_request_number:
         type: number
         required: false
-        description: "Optional PR number (if needed)."
     outputs:
       pr_version:
         description: "The version from version.yaml"
-        # This references the job-level output from `jobs.get`
         value: ${{ jobs.get.outputs.pr_version }}
 
 jobs:
   get:
     runs-on: ubuntu-latest
     outputs:
-      # Expose the step output as a job-level output
       pr_version: ${{ steps.extract_version.outputs.pr_version }}
-
     steps:
-      - name: "Check out repository"
+      - name: "Checkout repository"
         uses: actions/checkout@v3
 
       - name: "Set up Python"
@@ -37,9 +30,5 @@ jobs:
       - name: "Retrieve version"
         id: extract_version
         run: |
-          echo "=== [INFO] Retrieving current global version from version.yaml ==="
           version=$(python .github/scripts/bump_version/manage_global_version.py get_version | tail -n 1)
-          echo "Found version: $version"
-
-          # Write to GITHUB_OUTPUT to expose as a step output
           echo "pr_version=$version" >> $GITHUB_OUTPUT

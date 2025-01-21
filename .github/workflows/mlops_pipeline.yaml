@@ -22,8 +22,7 @@ jobs:
     uses: ./.github/workflows/get_pr_version.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
-    outputs:
-      pr_version: ${{ outputs.pr_version }}
+    # ❌ Remove the old 'outputs:' block
 
   push_to_azure:
     name: "Push to Azure"
@@ -43,6 +42,7 @@ jobs:
     if: ${{ success() }}
     uses: ./.github/workflows/tag_version.yaml
     with:
+      # reference the output from the child `get_pr_version` workflow
       pr_version: ${{ needs.get_pr_version.outputs.pr_version }}
       head_ref: ${{ github.event.pull_request.head.ref }}
       github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -16,16 +16,16 @@ jobs:
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
-  bump_version:
-    name: "Bump Version"
-    needs: on_approve
-    uses: ./.github/workflows/bump_version.yaml
-    with:
-      pull_request_number: ${{ github.event.pull_request.number }}
-      pr_labels: ${{ toJson(github.event.pull_request.labels) }}
-      pr_title: ${{ github.event.pull_request.title }}
-      base_ref: ${{ github.event.pull_request.base.ref }}
-      head_ref: ${{ github.event.pull_request.head.ref }}
+  # bump_version:
+  #   name: "Bump Version"
+  #   needs: on_approve
+  #   uses: ./.github/workflows/bump_version.yaml
+  #   with:
+  #     pull_request_number: ${{ github.event.pull_request.number }}
+  #     pr_labels: ${{ toJson(github.event.pull_request.labels) }}
+  #     pr_title: ${{ github.event.pull_request.title }}
+  #     base_ref: ${{ github.event.pull_request.base.ref }}
+  #     head_ref: ${{ github.event.pull_request.head.ref }}
 
   push_to_azure:
     name: "Push to Azure"
@@ -90,15 +90,15 @@ jobs:
               merge_method: "merge",  // or 'squash' or 'rebase'
             });
 
-  roll_back_version:
-    name: "Roll Back Version if pipeline Fails"
-    needs:
-      - push_to_azure
-      - bump_version
-      - tag_version
-      - merge_pr
-    uses: ./.github/workflows/rollback_version.yaml
-    if: ${{ failure() }}
-    with:
-      old_version: ${{ needs.bump_version.outputs.old_version }}
-      head_ref: ${{ github.event.pull_request.head.ref }}
+  # roll_back_version:
+  #   name: "Roll Back Version if pipeline Fails"
+  #   needs:
+  #     - push_to_azure
+  #     - bump_version
+  #     - tag_version
+  #     - merge_pr
+  #   uses: ./.github/workflows/rollback_version.yaml
+  #   if: ${{ failure() }}
+  #   with:
+  #     old_version: ${{ needs.bump_version.outputs.old_version }}
+  #     head_ref: ${{ github.event.pull_request.head.ref }}

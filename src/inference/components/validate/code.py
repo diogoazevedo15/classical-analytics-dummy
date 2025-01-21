@@ -3,7 +3,7 @@ def main():
 
     print("Hello from train-model")
     utils_fun
-    print("Hello34")
+    print("Hello36")
 
 
 if __name__ == "__main__":

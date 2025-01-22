@@ -39,6 +39,22 @@ jobs:
       AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}
       AZURE_REGISTRY_LOCATION: ${{ secrets.AZURE_REGISTRY_LOCATION }}
 
+  push_to_azure_shared_registry:
+    name: "Push to Azure Shared Registry"
+    needs: push_to_azure_dev
+    uses: ./.github/workflows/push_to_azure.yaml
+    with:
+      MODE: "shared_registry"
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_WORKSPACE_RESOURCE_GROUP: ${{ secrets.AZURE_WORKSPACE_RESOURCE_GROUP }}
+      AZURE_WORKSPACE_NAME: ${{ secrets.AZURE_WORKSPACE_NAME }}
+      AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}
+      AZURE_REGISTRY_LOCATION: ${{ secrets.AZURE_REGISTRY_LOCATION }}
+
   tag_version:
     name: "Tag Version"
     needs:

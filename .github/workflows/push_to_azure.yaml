@@ -18,9 +18,9 @@ on:
       AZURE_SUBSCRIPTION_ID:
         required: true
       AZURE_REGISTRY_NAME:
-        required: false
+        required: true
       AZURE_REGISTRY_LOCATION:
-        required: false
+        required: true
 
 jobs:
   push_to_azure:

@@ -4,6 +4,7 @@ on:
   workflow_call:
     inputs:
       MODE:
+        type: string
         description: "Deployment mode: 'workspace' or 'shared_registry'"
         required: false
         default: "workspace"

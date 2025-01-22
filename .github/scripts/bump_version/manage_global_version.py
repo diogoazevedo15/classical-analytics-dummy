@@ -4,7 +4,8 @@ manage_global_version.py
 
 Usage:
   python manage_global_version.py get_version
-    -> Prints the current version (X.Y) to stdout
+    -> Prints the current version (X.Y) to stdout and writes
+       pr_version=X.Y to GITHUB_OUTPUT
 
   python manage_global_version.py bump
     -> Reads PR labels from the environment to decide whether to bump major or minor.
@@ -93,12 +94,12 @@ def write_version(major, minor, version_file="version.yaml"):
     print(f"[INFO] Version updated to {version_str}")
 
 
-def get_current_version():
+def get_current_version_string():
     """
-    Prints the current version (e.g. "1.2") to stdout only.
+    Returns the current version string (e.g., "1.2").
     """
     major, minor = read_version()
-    print(f"{major}.{minor}")
+    return f"{major}.{minor}"
 
 
 def bump_version():
@@ -111,7 +112,6 @@ def bump_version():
     labels = get_labels_from_env()
     print(f"[INFO] PR Labels: {labels}")
 
-    # Check if any label combination is relevant for a bump
     if not has_required_label_combination(labels, REQUIRED_LABEL_COMBINATIONS):
         print("[INFO] No relevant label combinations found. No version bump needed.")
         return
@@ -138,8 +138,18 @@ def main():
         sys.exit(1)
 
     command = sys.argv[1].lower()
+
     if command == "get_version":
-        get_current_version()
+        version = get_current_version_string()
+        # Print to stdout (so logs can show it)
+        print(version)
+
+        # Also write to GITHUB_OUTPUT in the style you requested
+        github_output = os.environ.get("GITHUB_OUTPUT", "")
+        if github_output:
+            with open(github_output, "a", encoding="utf-8") as out:
+                out.write(f"pr_version={version}\n")
+
     elif command == "bump":
         bump_version()
     else:

@@ -129,12 +129,12 @@ def main():
     else:
         # default to workspace mode
         subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
-        resource_group = os.getenv("AZURE_RESOURCE_GROUP")
+        resource_group = os.getenv("AZURE_WORKSPACE_RESOURCE_GROUP")
         workspace_name = os.getenv("AZURE_WORKSPACE_NAME")
 
         if not subscription_id or not resource_group or not workspace_name:
             logging.error(
-                "❌ For 'workspace' mode, you must set AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, and AZURE_WORKSPACE_NAME."
+                "❌ For 'workspace' mode, you must set AZURE_SUBSCRIPTION_ID, AZURE_WORKSPACE_RESOURCE_GROUP, and AZURE_WORKSPACE_NAME."
             )
             sys.exit(1)
 

@@ -43,7 +43,7 @@ jobs:
       - push_to_azure_dev
       - get_pr_version
     # Use "if: always()" so this job runs regardless of push_to_azure_dev’s result.
-    if: always()
+    if: ${{ always() && needs.on_approve.result == 'success' && needs.get_pr_version.result == 'success' }}
     uses: ./.github/workflows/tag_version.yaml
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

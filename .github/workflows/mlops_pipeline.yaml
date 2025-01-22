@@ -16,16 +16,28 @@ jobs:
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
+  define_executable_actions:
+    name: "Define Executable Actions"
+    needs: on_approve
+    uses: ./.github/workflows/define_executable_actions.yaml
+    with:
+      pull_request_labels: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+
   get_pr_version:
     name: "Get PR Version"
-    needs: on_approve
+    needs:
+      - define_executable_actions
+    if: ${{ always() && needs.define_executable_actions.outputs.exec_get_pr_version == 'true' }}
     uses: ./.github/workflows/get_pr_version.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}
 
   push_to_azure_dev:
     name: "Push to Azure Dev"
-    needs: get_pr_version
+    needs:
+      - get_pr_version
+      - define_executable_actions
+    if: ${{ always() && needs.define_executable_actions.outputs.exec_push_to_azure_dev == 'true' }}
     uses: ./.github/workflows/push_to_azure.yaml
     with:
       MODE: "workspace"
@@ -41,7 +53,10 @@ jobs:
 
   push_to_azure_shared_registry:
     name: "Push to Azure Shared Registry"
-    needs: push_to_azure_dev
+    needs:
+      - push_to_azure_dev
+      - define_executable_actions
+    if: ${{ always() && needs.define_executable_actions.outputs.exec_push_to_azure_shared_registry == 'true' }}
     uses: ./.github/workflows/push_to_azure.yaml
     with:
       MODE: "shared_registry"
@@ -58,21 +73,28 @@ jobs:
   tag_version:
     name: "Tag Version"
     needs:
-      - push_to_azure_dev
-      - get_pr_version
-    # Use "if: always()" so this job runs regardless of push_to_azure_dev’s result.
-    if: ${{ always() && needs.on_approve.result == 'success' && needs.get_pr_version.result == 'success' }}
+      - push_to_azure_shared_registry
+      - define_executable_actions
+    if: ${{ always() && needs.define_executable_actions.outputs.exec_tag_version == 'true' }}
     uses: ./.github/workflows/tag_version.yaml
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
     with:
-      pr_version: "${{ format('{0}{1}', needs.get_pr_version.outputs.pr_version, (needs.push_to_azure_dev.result == 'failure' && '-broken' || '')) }}"
+      pr_version: "${{ needs.get_pr_version.outputs.pr_version }}"
       head_ref: ${{ github.event.pull_request.head.ref }}
+
+  mlops_pipeline_finished:
+    name: "MLOps Pipeline Finished"
+    needs:
+      - tag_version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo Pipeline Finished
+        run: echo "MLOps pipeline finished"
 
   merge_pr:
     name: "Merge PR"
-    needs:
-      - tag_version
+    needs: mlops_pipeline_finished
     if: ${{ always() && needs.tag_version.result == 'success' }}
     uses: ./.github/workflows/merge_pr.yaml
     secrets:

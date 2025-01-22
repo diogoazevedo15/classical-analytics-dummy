@@ -17,6 +17,10 @@ on:
         required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
+      AZURE_WORKSPACE_RESOURCE_GROUP:
+        required: true
+      AZURE_WORKSPACE_NAME:
+        required: true
       AZURE_REGISTRY_NAME:
         required: true
       AZURE_REGISTRY_LOCATION:

@@ -85,11 +85,6 @@ jobs:
       pr_version: "${{ needs.get_pr_version.outputs.pr_version }}"
       head_ref: ${{ github.event.pull_request.head.ref }}
 
-  mlops_pipeline_finished:
-    name: "MLOps Pipeline Finished"
-    needs: tag_version
-    runs: echo "MLOps pipeline execution completed."
-
   merge_pr:
     name: "Merge PR"
     needs: tag_version

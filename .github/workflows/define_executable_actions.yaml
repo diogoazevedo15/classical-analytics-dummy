@@ -3,8 +3,8 @@ name: "Define Executable Actions"
 on:
   workflow_call:
     inputs:
-      pull_request_number:
-        type: number
+      pull_request_labels:
+        type: string       # JSON string of PR labels
         required: true
     secrets: {}
 
@@ -16,28 +16,11 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v3
 
-      - name: Get PR Labels
-        id: get_labels
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Retrieve labels for the given pull_request_number
-          PR_NUMBER="${{ inputs.pull_request_number }}"
-          REPO="${{ github.repository }}"
-
-          LABELS=$(curl -s \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/$REPO/issues/$PR_NUMBER" \
-          | jq -r '.labels[].name')
-
-          echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
-
       - name: Define Which Actions to Execute
         id: define
         run: python .github/scripts/define_executable_actions/define_executable_actions.py
         env:
-          ALL_LABELS: ${{ steps.get_labels.outputs.labels }}
+          PR_LABELS_JSON: ${{ inputs.pull_request_labels }}
 
     outputs:
       exec_get_pr_version: ${{ steps.define.outputs.exec_get_pr_version }}

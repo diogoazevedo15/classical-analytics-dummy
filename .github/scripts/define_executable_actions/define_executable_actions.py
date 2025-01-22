@@ -5,7 +5,7 @@ A simple script to determine which steps in the MLOps pipeline should run,
 based on the labels assigned to the pull request.
 
 Environment Variables:
-- ALL_LABELS: Space-separated list of PR labels.
+- PR_LABELS_JSON: JSON array of label strings (from the main workflow).
 - GITHUB_OUTPUT: Path to the GitHub output file for setting job outputs.
 
 Outputs are appended as lines to the GITHUB_OUTPUT file:
@@ -18,20 +18,28 @@ Usage:
   python define_executable_actions.py
 """
 
+import json
 import os
 
 
 def has_any(label_set, labels):
-    """Return True if there's at least one common label."""
+    """Return True if there's at least one overlapping label."""
     return not label_set.isdisjoint(labels)
 
 
 def main():
-    # Read all labels from environment
-    labels_str = os.environ.get("ALL_LABELS", "")
-    labels = {label.strip().lower() for label in labels_str.split() if label.strip()}
+    # Read the JSON string of labels from environment
+    labels_json = os.environ.get("PR_LABELS_JSON", "[]")
+    try:
+        # Parse the JSON array (e.g., ["dev", "train"])
+        raw_labels = json.loads(labels_json)
+        # Normalize to lower-case set
+        labels = {lbl.strip().lower() for lbl in raw_labels if lbl.strip()}
+    except json.JSONDecodeError:
+        print("Error: Could not parse PR_LABELS_JSON; defaulting to empty set.")
+        labels = set()
 
-    # Define relevant label sets
+    # Define label sets
     set_env = {
         "dev",
         "qua",
@@ -40,13 +48,12 @@ def main():
     set_scenario = {"train", "inference", "utils", "tests"}
     set_env_shared = {"qua", "prod"}  # For push_to_azure_shared_registry
 
-    # Decide which actions to execute
-    # All these three require at least one label in set_env AND one in set_scenario:
+    # Determine which actions to execute
     exec_get_pr_version = has_any(set_env, labels) and has_any(set_scenario, labels)
     exec_push_to_azure_dev = exec_get_pr_version
     exec_tag_version = exec_get_pr_version
 
-    # push_to_azure_shared_registry requires at least one label in set_env_shared AND one in set_scenario:
+    # push_to_azure_shared_registry requires at least one label in set_env_shared AND one in set_scenario
     exec_push_to_azure_shared_registry = has_any(set_env_shared, labels) and has_any(
         set_scenario, labels
     )
@@ -58,7 +65,7 @@ def main():
     print("exec_push_to_azure_shared_registry:", exec_push_to_azure_shared_registry)
     print("exec_tag_version:", exec_tag_version)
 
-    # Write outputs to GITHUB_OUTPUT so the calling workflow can access them
+    # Write the outcomes to GITHUB_OUTPUT
     github_output = os.environ.get("GITHUB_OUTPUT", "")
     if github_output:
         with open(github_output, "a") as out:

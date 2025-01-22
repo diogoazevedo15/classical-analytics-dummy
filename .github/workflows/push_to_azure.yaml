@@ -56,4 +56,4 @@ jobs:
       - name: "[INFO] Run push_to_azure Python script"
         run: |
           echo "Deployment mode: $AZURE_MODE"
-          python .github/scripts/push_to_azure.py
+          python .github/scripts/push_to_azure/push_to_azure.py

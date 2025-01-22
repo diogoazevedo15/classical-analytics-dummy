@@ -6,7 +6,15 @@ on:
       pull_request_labels:
         type: string       # JSON string of PR labels
         required: true
-    secrets: {}
+    outputs:
+      exec_get_pr_version:
+        value: ${{ jobs.define_actions.outputs.exec_get_pr_version }}
+      exec_push_to_azure_dev:
+        value: ${{ jobs.define_actions.outputs.exec_push_to_azure_dev }}
+      exec_push_to_azure_shared_registry:
+        value: ${{ jobs.define_actions.outputs.exec_push_to_azure_shared_registry }}
+      exec_tag_version:
+        value: ${{ jobs.define_actions.outputs.exec_tag_version }}
 
 jobs:
   define_actions:

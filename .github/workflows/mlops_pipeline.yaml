@@ -25,7 +25,9 @@ jobs:
 
   get_pr_version:
     name: "Get PR Version"
-    needs: define_executable_actions
+    needs:
+      - define_executable_actions
+      - define_executable_actions
     if: ${{ always() && needs.define_executable_actions.outputs.exec_get_pr_version == 'true' }}
     uses: ./.github/workflows/get_pr_version.yaml
     with:
@@ -33,7 +35,9 @@ jobs:
 
   push_to_azure_dev:
     name: "Push to Azure Dev"
-    needs: get_pr_version
+    needs:
+      - get_pr_version
+      - define_executable_actions
     if: ${{ always() && needs.define_executable_actions.outputs.exec_push_to_azure_dev == 'true' }}
     uses: ./.github/workflows/push_to_azure.yaml
     with:
@@ -50,7 +54,9 @@ jobs:
 
   push_to_azure_shared_registry:
     name: "Push to Azure Shared Registry"
-    needs: push_to_azure_dev
+    needs:
+      - push_to_azure_dev
+      - define_executable_actions
     if: ${{ always() && needs.define_executable_actions.outputs.exec_push_to_azure_shared_registry == 'true' }}
     uses: ./.github/workflows/push_to_azure.yaml
     with:
@@ -69,6 +75,7 @@ jobs:
     name: "Tag Version"
     needs:
       - push_to_azure_shared_registry
+      - define_executable_actions
     if: ${{ always() && needs.define_executable_actions.outputs.exec_tag_version == 'true' }}
     uses: ./.github/workflows/tag_version.yaml
     secrets:

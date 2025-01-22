@@ -26,7 +26,15 @@ jobs:
   push_to_azure_dev:
     name: "Push to Azure Dev"
     needs: get_pr_version
-    uses: ./.github/workflows/push_to_azure_dev.yaml
+    uses: ./.github/workflows/push_to_azure.yaml
+    # The 'with' section is where you can override inputs
+    # for the push_to_azure.yaml workflow. For example,
+    # if you wanted to force "shared_registry" mode, you'd do:
+    # with:
+    #   MODE: "shared_registry"
+    # But let's default to "workspace" mode for dev:
+    with:
+      MODE: "workspace"
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}

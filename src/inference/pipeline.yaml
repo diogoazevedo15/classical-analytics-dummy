@@ -2,7 +2,7 @@ $schema: https://azuremlschemas.azureedge.net/latest/PipelineComponent.schema.js
 type: pipeline
 name: inference_pipeline
 display_name: inference_pipeline
-version: '5.31'
+version: '5.32'
 inputs:
   input_url:
     type: uri_folder

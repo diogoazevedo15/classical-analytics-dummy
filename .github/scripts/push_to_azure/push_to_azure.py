@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+"""
+This script is used to deploy environments and components to Azure Machine Learning
+either in a workspace or a shared registry mode. It authenticates using Azure credentials
+and deploys components and environments based on the configuration files found in specified directories.
+"""
+
 import logging
 import os
 import sys
@@ -20,6 +26,12 @@ def deploy_environment(
 ):
     """
     Deploy (create or update) an environment if env.yaml is found.
+
+    Args:
+        ml_client (MLClient): The Azure ML client used for deployment.
+        env_file (Path): The path to the environment YAML file.
+        phase_label (str): The label indicating the phase (e.g., TRAIN, INFERENCE).
+        component_name (str): The name of the component for which the environment is being deployed.
     """
     if not env_file.is_file():
         logging.info(
@@ -48,6 +60,12 @@ def deploy_component_or_pipeline(
     Deploy (create or update) a component (or pipeline component) if config.yaml/pipeline.yaml is found.
 
     We assume pipeline.yaml or config.yaml are both valid inputs to `load_component(source=...)`.
+
+    Args:
+        ml_client (MLClient): The Azure ML client used for deployment.
+        component_file (Path): The path to the component or pipeline YAML file.
+        phase_label (str): The label indicating the phase (e.g., TRAIN, INFERENCE).
+        component_name (str): The name of the component or pipeline being deployed.
     """
     if not component_file.is_file():
         logging.info(
@@ -68,6 +86,11 @@ def deploy_component_or_pipeline(
 
 
 def main():
+    """
+    Main function to execute the deployment process. It determines the mode of deployment,
+    authenticates using Azure credentials, and deploys environments and components based on
+    the specified directories and configuration files.
+    """
     # Determine mode: "workspace" or "shared_registry"
     mode = os.getenv("AZURE_MODE", "workspace").strip().lower()
 

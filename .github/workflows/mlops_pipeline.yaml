@@ -38,6 +38,17 @@ jobs:
       AZURE_WORKSPACE_NAME: ${{ secrets.AZURE_WORKSPACE_NAME }}
       AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}
       AZURE_REGISTRY_LOCATION: ${{ secrets.AZURE_REGISTRY_LOCATION }}
+    steps:
+      - name: "Print Secrets for Debugging"
+        run: |
+          echo "AZURE_CLIENT_ID: $AZURE_CLIENT_ID"
+          echo "AZURE_CLIENT_SECRET: $AZURE_CLIENT_SECRET"
+          echo "AZURE_TENANT_ID: $AZURE_TENANT_ID"
+          echo "AZURE_SUBSCRIPTION_ID: $AZURE_SUBSCRIPTION_ID"
+          echo "AZURE_WORKSPACE_RESOURCE_GROUP: $AZURE_WORKSPACE_RESOURCE_GROUP"
+          echo "AZURE_WORKSPACE_NAME: $AZURE_WORKSPACE_NAME"
+          echo "AZURE_REGISTRY_NAME: $AZURE_REGISTRY_NAME"
+          echo "AZURE_REGISTRY_LOCATION: $AZURE_REGISTRY_LOCATION"
 
   tag_version:
     name: "Tag Version"

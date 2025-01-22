@@ -27,7 +27,7 @@ jobs:
     name: "Get PR Version"
     needs:
       - define_executable_actions
-    if: ${{ always() && needs.define_executable_actions.outputs.exec_get_pr_version == 'true' }}
+    if: ${{ always() }}
     uses: ./.github/workflows/get_pr_version.yaml
     with:
       pull_request_number: ${{ github.event.pull_request.number }}

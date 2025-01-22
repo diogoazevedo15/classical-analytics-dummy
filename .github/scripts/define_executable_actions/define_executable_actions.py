@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 define_executable_actions.py
 A simple script to determine which steps in the MLOps pipeline should run,

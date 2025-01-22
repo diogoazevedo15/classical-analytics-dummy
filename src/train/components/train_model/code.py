@@ -3,7 +3,7 @@ def main():
 
     print("Hello from train-model")
     utils_fun
-    print("Hello47")
+    print("Hello49")
     # Commit change
 
 

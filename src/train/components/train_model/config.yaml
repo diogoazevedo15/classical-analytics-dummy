@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: train_model
 display_name: train_model
-version: '5.31'
+version: '5.32'
 type: command
 inputs:
   input_url:

@@ -1,0 +1,59 @@
+name: "Push to Azure"
+
+on:
+  workflow_call:
+    inputs:
+      MODE:
+        type: string
+        description: "Deployment mode: 'workspace' or 'shared_registry'"
+        required: false
+        default: "workspace"
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_CLIENT_SECRET:
+        required: true
+      AZURE_TENANT_ID:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      AZURE_REGISTRY_NAME:
+        required: true
+      AZURE_REGISTRY_LOCATION:
+        required: true
+
+jobs:
+  push_to_azure:
+    name: "Push to Azure"
+    runs-on: ubuntu-latest
+
+    # Make sure we set our environment variables from the inputs/secrets
+    env:
+      AZURE_MODE: ${{ inputs.MODE }}
+
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      AZURE_REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}
+      AZURE_REGISTRY_LOCATION: ${{ secrets.AZURE_REGISTRY_LOCATION }}
+
+    steps:
+      - name: "[INFO] Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "[INFO] Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: "[INFO] Install dependencies"
+        run: |
+          pip install --upgrade pip
+          pip install -r .github/scripts/requirements.txt
+
+      - name: "[INFO] Run push_to_azure Python script"
+        run: |
+          echo "Deployment mode: $AZURE_MODE"
+          python .github/scripts/push_to_azure.py

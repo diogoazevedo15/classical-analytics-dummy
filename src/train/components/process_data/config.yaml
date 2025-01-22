@@ -5,7 +5,7 @@ version: '5.31'
 type: command
 inputs:
   input_url:
-    type: uri_folde
+    type: uri_folder
 outputs:
   output_url:
     type: uri_folder

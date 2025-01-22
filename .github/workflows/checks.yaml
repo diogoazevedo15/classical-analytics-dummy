@@ -2,7 +2,7 @@ name: "Checks"
 
 on:
   pull_request:
-    types: [open, synchronize]
+    types: [synchronize]
 
 jobs:
   # 1) Lint Job

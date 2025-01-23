@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 name: inference
 display_name: inference
-version: '5.37'
+version: '5.39'
 type: command
 inputs:
   input_url:

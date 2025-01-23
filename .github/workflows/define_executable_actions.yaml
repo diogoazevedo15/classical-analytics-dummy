@@ -1,0 +1,37 @@
+name: "Define Executable Actions"
+
+on:
+  workflow_call:
+    inputs:
+      pull_request_labels:
+        type: string       # JSON string of PR labels
+        required: true
+    outputs:
+      exec_get_pr_version:
+        value: ${{ jobs.define_actions.outputs.exec_get_pr_version }}
+      exec_push_to_azure_dev:
+        value: ${{ jobs.define_actions.outputs.exec_push_to_azure_dev }}
+      exec_push_to_azure_shared_registry:
+        value: ${{ jobs.define_actions.outputs.exec_push_to_azure_shared_registry }}
+      exec_tag_version:
+        value: ${{ jobs.define_actions.outputs.exec_tag_version }}
+
+jobs:
+  define_actions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Define Which Actions to Execute
+        id: define
+        run: python .github/scripts/define_executable_actions/define_executable_actions.py
+        env:
+          PR_LABELS_JSON: ${{ inputs.pull_request_labels }}
+
+    outputs:
+      exec_get_pr_version: ${{ steps.define.outputs.exec_get_pr_version }}
+      exec_push_to_azure_dev: ${{ steps.define.outputs.exec_push_to_azure_dev }}
+      exec_push_to_azure_shared_registry: ${{ steps.define.outputs.exec_push_to_azure_shared_registry }}
+      exec_tag_version: ${{ steps.define.outputs.exec_tag_version }}
